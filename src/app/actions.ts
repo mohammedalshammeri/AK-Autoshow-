@@ -135,9 +135,9 @@ export async function registerGroupAction(formData: FormData): Promise<Registrat
     
     return {
       success: true,
-      message: 'تم تسجيل القروب بنجاح',
+      message: 'تم استلام طلب تسجيل القروب بنجاح (بانتظار الموافقة)',
       registrationNumber,
-      qrCodes: qrCodesList
+      // qrCodes: qrCodesList // Removed to avoid confusion. QR codes are sent AFTER approval.
     };
 
   } catch (error) {

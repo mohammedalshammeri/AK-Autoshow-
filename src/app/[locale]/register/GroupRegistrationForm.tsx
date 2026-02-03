@@ -150,18 +150,20 @@ export default function GroupRegistrationForm({ t, locale, events }: GroupFormPr
     return (
       <div className="text-center space-y-6">
         <div className="bg-green-900/50 p-6 rounded-xl border border-green-500">
-          <h2 className="text-3xl font-bold text-green-400">تم تسجيل القروب بنجاح!</h2>
-          <p className="text-gray-300 mt-2">رقم الطلب: {successData?.registrationNumber}</p>
-          <p className="text-sm text-gray-400 mt-4">تم إرسال {successData?.qrCodes?.length} باركود إلى بريدك الإلكتروني.</p>
-        </div>
-        <div className="bg-gray-800 p-4 rounded-lg text-left overflow-auto max-h-96" dir="ltr">
-             <h3 className="text-white font-bold mb-2">Generated QR Codes (Preview):</h3>
-             {successData?.qrCodes?.map((qr: any, i: number) => (
-                 <div key={i} className="flex justify-between items-center bg-gray-700 p-2 mb-2 rounded">
-                     <span>{qr.plate}</span>
-                     <span className="font-mono text-xs bg-black px-2 py-1 rounded text-green-400">{qr.code.substring(0,8)}...</span>
-                 </div>
-             ))}
+          <h2 className="text-3xl font-bold text-green-400">
+            {locale === 'ar' ? 'تم استلام طلبك بنجاح!' : 'Application Received!'}
+          </h2>
+          <p className="text-gray-300 mt-2">
+            {locale === 'ar' ? 'رقم الطلب:' : 'Request Number:'} {successData?.registrationNumber}
+          </p>
+          <p className="text-yellow-400 font-bold mt-4 text-lg">
+             {locale === 'ar' ? 'طلبك قيد المراجعة حالياً.' : 'Your application is currently under review.'}
+          </p>
+          <p className="text-sm text-gray-400 mt-2">
+             {locale === 'ar' 
+                ? 'سيتم إرسال رموز QR وتفاصيل الدخول عبر البريد الإلكتروني بعد الموافقة النهائية.' 
+                : 'QR codes and entry details will be sent to your email after final approval.'}
+          </p>
         </div>
       </div>
     );
