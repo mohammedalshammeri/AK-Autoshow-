@@ -222,7 +222,7 @@ export async function sendApprovalEmail(payload: SendEmailPayload) {
       to: payload.participantEmail,
       subject: `تم قبول تسجيلك في ${cleanEventName}!`
     });    const { data, error } = await resend.emails.send({
-      from: 'AK Auto Show <noreply@akautoshow.com>',
+      from: senderEmail,
       to: [payload.participantEmail],
       subject: `AKAutoshow Registration Approved - ${payload.registrationNumber}`,
       replyTo: 'support@akautoshow.com',      headers: {
