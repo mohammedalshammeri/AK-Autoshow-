@@ -1,0 +1,88 @@
+/* Phone Input Styles for Gulf Countries */
+.phone-input-container {
+  @apply space-y-2;
+}
+
+.phone-input-label {
+  @apply block text-sm font-medium text-gray-300;
+}
+
+.phone-input-wrapper {
+  @apply flex gap-2;
+}
+
+.country-code-select {
+  @apply bg-gray-700 px-3 py-3 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-red-500 min-w-[180px] transition-all duration-200;
+}
+
+.country-code-select:hover {
+  @apply border-gray-500;
+}
+
+.country-code-select:focus {
+  @apply ring-red-500 border-red-500;
+}
+
+.phone-number-input {
+  @apply bg-gray-700 flex-1 px-3 py-3 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all duration-200;
+}
+
+.phone-number-input:hover {
+  @apply border-gray-500;
+}
+
+.phone-number-input:focus {
+  @apply ring-red-500 border-red-500;
+}
+
+.phone-error-message {
+  @apply text-red-500 text-xs mt-1;
+}
+
+.phone-example-hint {
+  @apply flex items-center gap-2 text-xs text-gray-400;
+}
+
+.phone-example-code {
+  @apply bg-gray-800 px-2 py-1 rounded text-gray-300;
+}
+
+.phone-digits-hint {
+  @apply text-gray-500;
+}
+
+/* RTL Support */
+[dir="rtl"] .phone-input-wrapper {
+  @apply flex-row-reverse;
+}
+
+[dir="rtl"] .phone-example-hint {
+  @apply flex-row-reverse;
+}
+
+/* Animation for validation feedback */
+.phone-input-valid .phone-number-input {
+  @apply border-green-500 ring-green-500;
+}
+
+.phone-input-invalid .phone-number-input {
+  @apply border-red-500 ring-red-500;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .phone-input-wrapper {
+    @apply flex-col gap-2;
+  }
+  
+  .country-code-select {
+    @apply min-w-full;
+  }
+}
+
+/* Dark mode enhancements */
+@media (prefers-color-scheme: dark) {
+  .country-code-select option {
+    @apply bg-gray-800 text-white;
+  }
+}

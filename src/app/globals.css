@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+/* Custom font utilities */
+.font-heading {
+  font-family: var(--font-manrope), sans-serif;
+}
+
+.font-sans {
+  font-family: var(--font-inter), sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Sponsors scrolling animation */
+@keyframes scroll-rtl {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-100% + 100vw));
+  }
+}
+
+.animate-scroll-rtl {
+  animation: scroll-rtl 60s linear infinite;
+}
+
+.animate-scroll-rtl:hover {
+  animation-play-state: paused;
+}
+
+/* Drag and touch interactions */
+.cursor-grab {
+  cursor: grab;
+}
+
+.cursor-grab:active,
+.active\:cursor-grabbing {
+  cursor: grabbing;
+}
+
+/* Smooth sponsor transitions */
+.sponsor-slide {
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Godzilla Breathing Animation */
+@keyframes godzilla-breathe {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 25px rgba(168,85,247,0.6));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 40px rgba(168,85,247,0.9)) brightness(1.1);
+  }
+}
+
+.animate-godzilla-breathe {
+  animation: godzilla-breathe 4s ease-in-out infinite;
+}
+
+/* Shake Animation for Breaking Effect */
+@keyframes violent-shake {
+  0% { transform: translate(1px, 1px) rotate(0deg); }
+  10% { transform: translate(-3px, -2px) rotate(-2deg); }
+  20% { transform: translate(-5px, 0px) rotate(2deg); }
+  30% { transform: translate(5px, 2px) rotate(0deg); }
+  40% { transform: translate(1px, -1px) rotate(2deg); }
+  50% { transform: translate(-1px, 2px) rotate(-2deg); }
+  60% { transform: translate(-5px, 1px) rotate(0deg); }
+  70% { transform: translate(3px, 1px) rotate(-2deg); }
+  80% { transform: translate(-1px, -1px) rotate(2deg); }
+  90% { transform: translate(1px, 2px) rotate(0deg); }
+  100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+
+.animate-shake {
+  animation: violent-shake 0.5s infinite;
+}
+
+/* Shatter/Fade Out Animation */
+@keyframes shatter-fade {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.5); filter: blur(4px); }
+}
+
+.animate-shatter {
+  animation: shatter-fade 0.5s forwards;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

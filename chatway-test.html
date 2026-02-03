@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatway Widget Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            padding: 50px;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-info {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .success {
+            color: #4ade80;
+        }
+        .warning {
+            color: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗨️ اختبار Chatway Live Chat Widget</h1>
+        
+        <div class="test-info">
+            <h2>معلومات الاختبار</h2>
+            <p><strong>Widget ID:</strong> yyICFURJy4Y8</p>
+            <p><strong>URL:</strong> https://cdn.chatway.app/widget.js?id=yyICFURJy4Y8</p>
+            <p><strong>التاريخ:</strong> <span id="currentDate"></span></p>
+        </div>
+
+        <div class="test-info">
+            <h2>حالة التحميل</h2>
+            <p id="loadStatus" class="warning">⏳ جاري التحميل...</p>
+        </div>
+
+        <div class="test-info">
+            <h2>التعليمات</h2>
+            <p>✅ إذا ظهر الـ Chat Widget في الزاوية السفلية، فالاختبار نجح</p>
+            <p>❌ إذا لم يظهر، تحقق من console للأخطاء</p>
+        </div>
+
+        <div class="test-info">
+            <h2>الاستخدام في الموقع</h2>
+            <p>سيظهر هذا الـ Widget في:</p>
+            <ul style="text-align: left; max-width: 400px; margin: 0 auto;">
+                <li>✅ الصفحة الرئيسية</li>
+                <li>✅ صفحة التسجيل</li>
+                <li>✅ صفحة الشروط والأحكام</li>
+                <li>❌ صفحات الـ Admin (مخفي)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Chatway Live Chat Widget -->
+    <script 
+        id="chatway" 
+        async 
+        src="https://cdn.chatway.app/widget.js?id=yyICFURJy4Y8"
+        onload="handleWidgetLoad()"
+        onerror="handleWidgetError()"
+    ></script>
+
+    <script>
+        // عرض التاريخ الحالي
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('ar-BH');
+
+        // معالج نجاح التحميل
+        function handleWidgetLoad() {
+            console.log('✅ تم تحميل Chatway Widget بنجاح');
+            document.getElementById('loadStatus').innerHTML = '<span class="success">✅ تم التحميل بنجاح!</span>';
+        }
+
+        // معالج فشل التحميل
+        function handleWidgetError() {
+            console.error('❌ فشل في تحميل Chatway Widget');
+            document.getElementById('loadStatus').innerHTML = '<span style="color: #ef4444;">❌ فشل في التحميل</span>';
+        }
+
+        // اختبار إضافي بعد 5 ثوان
+        setTimeout(() => {
+            if (window.Chatway || document.querySelector('[id*="chatway"]')) {
+                console.log('✅ Widget موجود في الصفحة');
+            } else {
+                console.warn('⚠️ لم يتم العثور على Widget');
+            }
+        }, 5000);
+
+        // إضافة معلومات debug
+        console.log('🔍 معلومات Chatway Widget:');
+        console.log('- Widget ID: yyICFURJy4Y8');
+        console.log('- CDN URL: https://cdn.chatway.app/widget.js?id=yyICFURJy4Y8');
+        console.log('- تاريخ الإضافة:', new Date());
+    </script>
+</body>
+</html>
