@@ -24,7 +24,7 @@ const pool = new Pool({
   ssl: {
     rejectUnauthorized: false, // مطلوب لاتصالات Neon الآمنة
   },
-  max: 20, // الحد الأقصى للاتصالات المتزامنة
+  max: process.env.NODE_ENV === 'production' ? 2 : 10, // تقليل عدد الاتصالات في وضع الإنتاج لبيئة Serverless
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000, // زيادة مهلة الاتصال
 });

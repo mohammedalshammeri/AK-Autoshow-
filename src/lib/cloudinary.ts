@@ -33,8 +33,8 @@ export async function uploadToCloudinary(
       // Apply optimization for images
       if (resourceType === 'image' || resourceType === 'auto') {
         uploadOptions.transformation = [
-          { quality: "auto:good", fetch_format: "auto" }, // Intelligent compression
-          { width: 1920, height: 1920, crop: "limit" } // Resize if larger than 1920px
+          { quality: "auto:eco", fetch_format: "auto" }, // Maximum compression (Eco mode)
+          { width: 1200, height: 1200, crop: "limit" } // Resize to max 1200px
         ];
       }
 

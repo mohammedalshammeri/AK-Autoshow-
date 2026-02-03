@@ -15,6 +15,7 @@ interface RegistrationResult {
 }
 
 // Neon-backed registration (no Supabase)
+export const maxDuration = 60; // Set timeout to 60 seconds (Hobby limit usually 10s, Pro 60s)
 export async function registerAction(formData: FormData): Promise<RegistrationResult> {
   // Delegate to the dedicated Neon implementation.
   return (await neonRegisterAction(formData)) as RegistrationResult;

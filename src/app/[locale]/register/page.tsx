@@ -59,7 +59,7 @@ const FileUploader = ({ control, name, t, locale, field }: {
           <div key={index} className="w-full h-24 border-2 border-dashed border-gray-600 rounded-lg flex items-center justify-center relative">
             <input
               type="file"
-              accept="image/png, image/jpeg, image/jpg, image/webp, image/heic, image/heif"
+              accept="image/*"
               onChange={(e) => handleFileChange(index, e)}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               suppressHydrationWarning={true}

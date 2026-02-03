@@ -9,6 +9,7 @@ import { query } from '@/lib/db'; // Import Neon DB connection
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Add registration result interface and function
+export const maxDuration = 60; // Ensure long timeout for file uploads
 export interface RegistrationResult {
   success: boolean;
   message: string;
