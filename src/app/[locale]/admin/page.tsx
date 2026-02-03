@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 // import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
+import { sendApprovalEmail, sendRejectionEmail } from '@/app/_actions';
 
 // Layout Components
 import { AdminShell } from '@/components/admin/layout/AdminShell';
@@ -291,49 +292,35 @@ export default function AdminPage() {
       
       const reg = registrations.find(r => r.id === regId);
       if (reg) {
-        await fetch('/api/send-email', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            to: reg.email,
-            subject: newStatus === 'approved' 
-              ? `مبروك! تم قبول تسجيلك | Godzilla Car Show Approved` 
-              : 'تحديث بخصوص طلب تسجيلك | Registration Update',
-            html: newStatus === 'approved'
-              ? `
-              <div style="font-family: sans-serif; direction: rtl; text-align: right; margin-bottom: 20px;">
-                <h2 style="color: #4CAF50;">🎉 تهانينا ${reg.full_name}!</h2>
-                <p>يسعدنا إبلاغك بأنه تم قبول طلبك للمشاركة في <strong>معرض قودزيلا للسيارات</strong>.</p>
-                <p><strong>المركبة:</strong> ${reg.car_make} ${reg.car_model} - ${reg.car_year}</p>
-                <p><strong>الموعد:</strong> يوم الجمعة، 13 فبراير 2026 (2:00PM - 8:00PM)</p>
-                <p><strong>الموقع:</strong> جرافيتي فيليج (Gravity Village)</p>
-                <p>ننتظر رؤية سيارتك المميزة في الحدث!</p>
-              </div>
-
-              <!-- Diamond Sponsors Section -->
-              ${sponsors.filter(s => s.tier === 'diamond').length > 0 ? `
-              <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: #f9fafb; border-radius: 8px;">
-                 <h3 style="color: #333; margin-bottom: 15px; font-size: 16px;">الرعاة الماسيين | Diamond Sponsors</h3>
-                 <div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;">
-                    ${sponsors.filter(s => s.tier === 'diamond').map(s => `
-                        <img src="${s.logo_url}" alt="${s.name}" style="height: 60px; object-fit: contain;" />
-                    `).join('')}
-                 </div>
-              </div>` : ''}
-
-              <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-              <div style="font-family: sans-serif; direction: ltr; text-align: left;">
-                <h2 style="color: #4CAF50;">🎉 Congratulations ${reg.full_name}!</h2>
-                <p>We are pleased to inform you that your vehicle has been officially approved for <strong>Godzilla Car Show</strong>!</p>
-                <p><strong>Vehicle:</strong> ${reg.car_make} ${reg.car_model} - ${reg.car_year}</p>
-                <p><strong>Date:</strong> Friday, Feb 13, 2026 (2:00PM - 8:00PM)</p>
-                <p><strong>Location:</strong> Gravity Village</p>
-                <p>We look forward to seeing you there!</p>
-              </div>
-              `
-              : `<div dir="rtl"><h2>مرحباً ${reg.full_name}</h2><p>نأسف لإبلاغك أنه لم يتم قبول طلبك هذه المرة.</p></div>`
-          })
-        });
+        if (newStatus === 'approved') {
+           console.log('📧 Sending Approval Email via Server Action...');
+           try {
+              const emailResult = await sendApprovalEmail({
+                registrationId: reg.id,
+                participantEmail: reg.email,
+                participantName: reg.full_name,
+                registrationNumber: reg.registration_number || `AKA-${reg.id.substring(0,6)}`,
+                eventId: reg.event_id || 0
+              });
+              if (emailResult.success) {
+                console.log('✅ Email sent successfully');
+                alert('تم إرسال إيميل الموافقة بنجاح');
+              } else {
+                console.error('❌ Email failed:', emailResult.error);
+                alert('تنبيه: تم قبول الطلب ولكن فشل إرسال الإيميل: ' + emailResult.error);
+              }
+           } catch (emailErr) {
+             console.error('❌ Email Exception:', emailErr);
+             alert('تنبيه: تم قبول الطلب ولكن حدث خطأ مفاجئ أثناء إرسال الإيميل');
+           }
+        } else {
+           console.log('📧 Sending Rejection Email via Server Action...');
+           await sendRejectionEmail({
+             participantEmail: reg.email,
+             participantName: reg.full_name,
+             eventName: 'Godzilla Car Show'
+           });
+        }
       }
     } catch (error: any) {
       console.error('Error updating status:', error);

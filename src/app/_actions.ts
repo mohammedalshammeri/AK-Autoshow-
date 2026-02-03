@@ -215,7 +215,7 @@ export async function sendApprovalEmail(payload: SendEmailPayload) {
     console.log('📧 بدء إرسال الإيميل باستخدام Resend...');
     
     // Use better sender configuration
-    const senderEmail = 'AKAutoshow <onboarding@resend.dev>';
+    const senderEmail = 'AKAutoshow <noreply@akautoshow.com>';
     
     console.log('📤 إعدادات الإرسال:', {
       from: senderEmail,
