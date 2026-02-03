@@ -15,7 +15,7 @@ interface RegistrationResult {
 }
 
 // Neon-backed registration (no Supabase)
-export const maxDuration = 60; // Set timeout to 60 seconds (Hobby limit usually 10s, Pro 60s)
+// export const maxDuration = 60; // Set timeout to 60 seconds (Hobby limit usually 10s, Pro 60s)  <-- REMOVED because Next.js only allows async exports in server actions
 export async function registerAction(formData: FormData): Promise<RegistrationResult> {
   // Delegate to the dedicated Neon implementation.
   return (await neonRegisterAction(formData)) as RegistrationResult;
