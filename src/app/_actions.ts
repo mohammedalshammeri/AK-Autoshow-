@@ -3,13 +3,11 @@
 import { Resend } from 'resend';
 import CleanApprovalEmail from '@/emails/CleanApprovalEmail';
 import RejectionEmail from '@/emails/RejectionEmail';
-import { uploadToCloudinary } from '@/lib/cloudinary'; // Add Cloudinary import
-import { query } from '@/lib/db'; // Import Neon DB connection
+import { uploadToCloudinary } from '@/lib/cloudinary';
+import { query } from '@/lib/db';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Add registration result interface and function
-// export const maxDuration = 60; // Ensure long timeout for file uploads  <-- REMOVED because Next.js only allows async exports in server actions
 export interface RegistrationResult {
   success: boolean;
   message: string;
@@ -21,7 +19,6 @@ export async function registerAction(formData: FormData): Promise<RegistrationRe
   console.log('🚀 بدء عملية التسجيل (Neon DB)...');
   
   try {
-    // استخراج البيانات من FormData
     const eventId = formData.get('eventId') as string;
     const fullName = formData.get('fullName') as string;
     const email = formData.get('email') as string;
@@ -31,7 +28,6 @@ export async function registerAction(formData: FormData): Promise<RegistrationRe
     const carModel = formData.get('carModel') as string;
     const carYear = formData.get('carYear') as string;
 
-    // دمج رقم الهاتف مع كود الدولة
     const fullPhoneNumber = `${countryCode}${phoneNumber}`;
 
     console.log('📋 البيانات المستلمة:', {
@@ -42,7 +38,6 @@ export async function registerAction(formData: FormData): Promise<RegistrationRe
       car: `${carMake} ${carModel} ${carYear}`
     });
 
-    // التحقق من البيانات المطلوبة
     if (!eventId || !fullName || !email || !phoneNumber || !carMake || !carModel || !carYear) {
       console.error('❌ بيانات مفقودة في النموذج');
       return {
@@ -52,12 +47,10 @@ export async function registerAction(formData: FormData): Promise<RegistrationRe
       };
     }
 
-    // توليد رقم تسجيل فريد
     const registrationNumber = `AKA-${Date.now().toString().slice(-4)}`;
     
     console.log('🎫 رقم التسجيل المولد:', registrationNumber);
 
-    // حفظ بيانات التسجيل في قاعدة البيانات (Neon)
     const insertQuery = `
       INSERT INTO registrations (event_id, full_name, email, phone_number, car_make, car_model, car_year, status, registration_number, country_code)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -82,11 +75,8 @@ export async function registerAction(formData: FormData): Promise<RegistrationRe
 
     console.log('✅ تم حفظ التسجيل بنجاح:', registrationData);
 
-    // معالجة رفع الصور (صورة واحدة فقط)
     const carImages = formData.getAll('carImages') as File[];
     const validImages = carImages.filter(file => file instanceof File && file.size > 0);
-    
-    // ✅ تقليل إلى صورة واحدة فقط
     const singleImage = validImages.length > 0 ? [validImages[0]] : [];
 
     console.log(`📸 معالجة ${singleImage.length} صورة للسيارة...`);
@@ -99,7 +89,6 @@ export async function registerAction(formData: FormData): Promise<RegistrationRe
       
       let imageUrl = '';
 
-      // محاولة الرفع إلى Cloudinary
       if (process.env.CLOUDINARY_CLOUD_NAME) {
          try {
             console.log('☁️ جاري الرفع إلى Cloudinary...');
@@ -108,7 +97,6 @@ export async function registerAction(formData: FormData): Promise<RegistrationRe
             console.log('✅ تم الرفع إلى Cloudinary:', imageUrl);
          } catch (e: any) {
             console.error('❌ خطأ في Cloudinary:', e);
-            // إرجاع خطأ للمستخدم بدلاً من إكمال التسجيل بدون صورة
             return {
               success: false, 
               message: 'فشل رفع الصورة. يرجى التأكد من الصورة والمحاولة مرة أخرى.',
@@ -125,7 +113,6 @@ export async function registerAction(formData: FormData): Promise<RegistrationRe
       }
 
       if (imageUrl) {
-        // حفظ معلومات الصورة في قاعدة البيانات (Neon)
         const imageInsertQuery = `
           INSERT INTO car_images (registration_id, image_url, file_name)
           VALUES ($1, $2, $3)
@@ -164,18 +151,47 @@ interface SendEmailPayload {
 }
 
 export async function sendApprovalEmail(payload: SendEmailPayload) {
-  try {    console.log('🚀 بدء إرسال إيميل الموافقة...');
+  try {
+    console.log('🚀 بدء إرسال إيميل الموافقة...');
     console.log('📋 البيانات المستلمة:', payload);
-    console.log('🔍 جلب تفاصيل الحدث لـ eventId:', payload.eventId);
 
-    // Fetch Registration Details from Neon
-    const regQuery = `SELECT car_make, car_model, car_year FROM registrations WHERE id = $1`;
+    // 1. Fetch Diamond Sponsors
+    console.log('💎 جلب الرعاة الماسمين (Diamond Sponsors)...');
+    let diamondSponsors = [];
+    try {
+      const sponsorsQuery = `SELECT name, logo_url FROM sponsors WHERE tier = 'diamond' AND is_active = true ORDER BY name ASC`;
+      const sponsorsResult = await query(sponsorsQuery);
+      diamondSponsors = sponsorsResult.rows;
+      console.log(`✅ تم العثور على ${diamondSponsors.length} راعي ماسي`);
+    } catch (e) {
+      console.error('⚠️ تحذير: فشل جلب الرعاة', e);
+    }
+
+    // 2. Fetch Registration Details
+    console.log('🔍 جلب تفاصيل التسجيل...');
+    const regQuery = `SELECT car_make, car_model, car_year, registration_type, id FROM registrations WHERE id = $1`;
     const regResult = await query(regQuery, [payload.registrationId]);
     const registrationData = regResult.rows[0];
 
-    console.log('🚗 تفاصيل السيارة:', registrationData);
+    if (!registrationData) {
+        throw new Error(`Registration not found for ID: ${payload.registrationId}`);
+    }
 
-    // Fetch Event Details from Neon
+    const isGroup = registrationData.registration_type === 'group';
+    let groupCars = [];
+
+    // 3. Handle Group vs Individual Logic
+    if (isGroup) {
+        console.log('👥 هذا تسجيل مجموعة. جلب تفاصيل السيارات...');
+        const carsQuery = `SELECT make, model, plate_number as plate, qr_code as "qrCode" FROM registration_cars WHERE registration_id = $1`;
+        const carsResult = await query(carsQuery, [payload.registrationId]);
+        groupCars = carsResult.rows;
+        console.log(`✅ تم جلب ${groupCars.length} سيارة للمجموعة`);
+    } else {
+        console.log('👤 هذا تسجيل فردي.');
+    }
+
+    // 4. Fetch Event Details
     let eventData;
     try {
         const eventQuery = `SELECT name, event_date, location FROM events WHERE id = $1`;
@@ -185,7 +201,6 @@ export async function sendApprovalEmail(payload: SendEmailPayload) {
         console.error("Error fetching event", e);
     }
     
-    // If event not found, try to get first available event as fallback
     if (!eventData) {
       console.log('Event not found or error, trying first available event...');
       const firstEventQuery = `SELECT name, event_date, location FROM events LIMIT 1`;
@@ -193,90 +208,49 @@ export async function sendApprovalEmail(payload: SendEmailPayload) {
       eventData = firstEventResult.rows[0];
     }
 
-    if (!eventData) {
-      console.log('❌ لم يتم العثور على الحدث، استخدام بيانات افتراضية');
-      // Use default elegant event data
-      eventData = {
-        name: 'معرض السيارات الفاخرة - AKAutoshow 2026',
-        event_date: new Date('2025-12-31T19:00:00').toISOString(),
-        location: 'مركز البحرين الدولي للمعارض، المنامة'
-      };
-    }
+    const cleanEventName = eventData?.name?.trim() || 'AKAutoshow 2026';
+    const cleanLocation = eventData?.location?.trim() || 'Bahrain International Exhibition Centre';
+    const eventDate = eventData?.event_date 
+        ? new Date(eventData.event_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+        : 'Coming Soon';
 
-    console.log('Successfully fetched event details:', eventData);    // Clean and format event data 
-    const cleanEventName = eventData.name?.trim() || 'AKAutoshow 2026 - Premium Car Exhibition';
-    const cleanLocation = eventData.location?.trim() || 'Bahrain International Exhibition & Convention Centre, Manama';
-
-    const eventDate = new Date(eventData.event_date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });// Send the Email using Resend
-    console.log('📧 بدء إرسال الإيميل باستخدام Resend...');
-    
-    // Use better sender configuration
+    // 5. Send Email
     const senderEmail = 'AKAutoshow <noreply@akautoshow.com>';
     
-    console.log('📤 إعدادات الإرسال:', {
-      from: senderEmail,
-      to: payload.participantEmail,
-      subject: `تم قبول تسجيلك في ${cleanEventName}!`
-    });    const { data, error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: senderEmail,
       to: [payload.participantEmail],
       subject: `AKAutoshow Registration Approved - ${payload.registrationNumber}`,
-      replyTo: 'support@akautoshow.com',      headers: {
+      replyTo: 'support@akautoshow.com',
+      headers: {
         'List-Unsubscribe': '<mailto:unsubscribe@akautoshow.com>',
-        'X-Mailer': 'AKAutoshow-Registration-System',
-        'X-Priority': '1',
-        'X-MSMail-Priority': 'High',
-        'Importance': 'high'
-      },tags: [
-        { name: 'category', value: 'registration_approval' },
-        { name: 'event', value: 'akautoshow_event' }
-      ],      react: CleanApprovalEmail({
+      },
+      react: CleanApprovalEmail({
         participantName: payload.participantName,
         eventName: cleanEventName,
         eventDate: eventDate,
         eventLocation: cleanLocation,
-        vehicleDetails: `${registrationData?.car_make || 'Premium Vehicle'} ${registrationData?.car_model || 'Model'} ${registrationData?.car_year || '2024'}`,
+        vehicleDetails: isGroup 
+            ? `${groupCars.length} Vehicles Registered`
+            : `${registrationData.car_make} ${registrationData.car_model} ${registrationData.car_year}`,
         registrationNumber: payload.registrationNumber,
+        qrCodeData: isGroup ? undefined : payload.registrationNumber, // Pass ONLY for individual
+        isGroup: isGroup,
+        groupCars: groupCars,
+        diamondSponsors: diamondSponsors
       }),
-    });if (error) {
+    });
+
+    if (error) {
       console.error('❌ خطأ من Resend:', error);
-      console.error('🔍 تفاصيل الخطأ:', JSON.stringify(error, null, 2));
-      
-      // Add specific error handling
-      if (error.message?.includes('domain')) {
-        console.error('🚨 مشكلة في النطاق: قد تحتاج لتحقق النطاق في Resend Dashboard');
-      }
-      
       return { success: false, error: error.message };
     }
 
-    console.log('✅ تم إرسال الإيميل بنجاح!');
-    console.log('📧 بيانات الإرسال:', data);
-    
-    // Add delivery tips based on recipient domain
-    const recipientDomain = payload.participantEmail.split('@')[1];
-    console.log(`💡 نصائح التسليم لنطاق ${recipientDomain}:`);
-    
-    if (recipientDomain === 'gmail.com') {
-      console.log('- تحقق من مجلد Promotions في Gmail');
-      console.log('- تحقق من مجلد Spam');
-    } else if (recipientDomain === 'yahoo.com' || recipientDomain === 'outlook.com') {
-      console.log('- تحقق من مجلد Junk/Bulk');
-      console.log('- قد يحتاج النطاق للتحقق');
-    }
-    
-    console.log('⚠️  ملاحظة: النطاق onboarding@resend.dev محدود للاختبار فقط');
-    console.log('📧 لإيميلات الإنتاج، يُنصح بإعداد نطاق مُحقق');
-    
+    console.log('✅ تم إرسال إيميل الموافقة بنجاح!');
     return { success: true, data };
 
   } catch (error) {
     console.error('❌ خطأ عام في دالة إرسال الإيميل:', error);
-    console.error('🔍 Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
     const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير معروف';
     return { success: false, error: errorMessage };
   }

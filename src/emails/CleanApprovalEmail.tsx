@@ -16,6 +16,18 @@ interface CleanApprovalEmailProps {
   eventLocation?: string;
   vehicleDetails?: string;
   registrationNumber?: string;
+  qrCodeData?: string; // For Individual
+  isGroup?: boolean;
+  groupCars?: Array<{
+    make: string;
+    model: string;
+    plate: string;
+    qrCode: string;
+  }>;
+  diamondSponsors?: Array<{
+    name: string;
+    logo_url: string;
+  }>;
 }
 
 const CleanApprovalEmail = ({
@@ -25,6 +37,10 @@ const CleanApprovalEmail = ({
   eventLocation = 'Bahrain International Exhibition Centre',
   vehicleDetails = 'Your Premium Vehicle',
   registrationNumber = 'AKA-0001',
+  qrCodeData,
+  isGroup = false,
+  groupCars = [],
+  diamondSponsors = []
 }: CleanApprovalEmailProps) => {
   return (
     <Html>
@@ -50,15 +66,53 @@ const CleanApprovalEmail = ({
 
             {/* Event Selection Text */}
             <Text style={bodyText}>
-              Your vehicle has been officially selected for <strong>{eventName}</strong>, taking place on <strong>{eventDate}</strong>.
+              Your {isGroup ? 'group' : 'vehicle'} has been officially selected for <strong>{eventName}</strong>, taking place on <strong>{eventDate}</strong>.
             </Text>
 
-            {/* Vehicle Details Section */}
-            <Section style={detailsSection}>
-              <Text style={sectionTitle}>Vehicle details:</Text>
-              <Text style={detailText}>{vehicleDetails}</Text>
-              <Text style={detailText}>{registrationNumber}</Text>
-            </Section>
+            {/* Individual QR Code */}
+            {!isGroup && qrCodeData && (
+              <Section style={{ textAlign: 'center' as const, margin: '20px 0' }}>
+                <Img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeData)}&color=000000&bgcolor=ffffff`}
+                  width="200"
+                  height="200"
+                  alt="Registration QR Code"
+                  style={{ margin: '0 auto', border: '5px solid white', borderRadius: '10px' }}
+                />
+                <Text style={detailText}>Show this QR code at the entrance</Text>
+              </Section>
+            )}
+
+            {/* Vehicle Details Section (Individual) */}
+            {!isGroup && (
+              <Section style={detailsSection}>
+                <Text style={sectionTitle}>Vehicle details:</Text>
+                <Text style={detailText}>{vehicleDetails}</Text>
+                <Text style={detailText}>{registrationNumber}</Text>
+              </Section>
+            )}
+
+            {/* Group Cars Section */}
+            {isGroup && groupCars.length > 0 && (
+              <Section style={detailsSection}>
+                <Text style={sectionTitle}>Group Vehicles & Passes:</Text>
+                {groupCars.map((car, index) => (
+                   <div key={index} style={{ marginBottom: '30px', borderBottom: '1px solid #333', paddingBottom: '20px' }}>
+                      <Text style={{...detailText, fontWeight: 'bold', fontSize: '18px', color: '#fff'}}>
+                        #{index + 1} - {car.make} {car.model}
+                      </Text>
+                      <Text style={detailText}>Plate: {car.plate}</Text>
+                      <Img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(car.qrCode)}&color=000000&bgcolor=ffffff`}
+                        width="150"
+                        height="150"
+                        alt={`QR Code for ${car.plate}`}
+                        style={{ marginTop: '10px', border: '3px solid white', borderRadius: '5px' }}
+                      />
+                   </div>
+                ))}
+              </Section>
+            )}
 
             {/* Event Information */}
             <Section style={detailsSection}>
@@ -72,6 +126,24 @@ const CleanApprovalEmail = ({
                 <strong>Location:</strong> {eventLocation}
               </Text>
             </Section>
+
+            {/* Diamond Sponsors Section */}
+            {diamondSponsors.length > 0 && (
+              <Section style={{ marginTop: '40px', padding: '20px', borderTop: '1px solid #333' }}>
+                <Text style={{ ...sectionTitle, textAlign: 'center' as const }}>Diamond Sponsors</Text>
+                <div style={{ textAlign: 'center' as const }}>
+                  {diamondSponsors.map((sponsor, idx) => (
+                    <Img
+                      key={idx}
+                      src={sponsor.logo_url}
+                      alt={sponsor.name}
+                      width="80"
+                      style={{ display: 'inline-block', margin: '10px 15px', verticalAlign: 'middle' }}
+                    />
+                  ))}
+                </div>
+              </Section>
+            )}
 
             {/* Closing */}
             <Text style={bodyText}>
