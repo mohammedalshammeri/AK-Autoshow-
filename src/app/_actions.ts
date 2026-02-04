@@ -6,7 +6,9 @@ import RejectionEmail from '@/emails/RejectionEmail';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { query } from '@/lib/db';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY 
+  ? new Resend(process.env.RESEND_API_KEY)
+  : { emails: { send: async () => ({ error: { message: 'RESEND_API_KEY is missing' } }) } } as any;
 
 export interface RegistrationResult {
   success: boolean;
