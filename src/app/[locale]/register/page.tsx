@@ -33,27 +33,96 @@ const FileUploader = ({ control, name, t, locale, field }: {
   field: any 
 }) => {
   const [previews, setPreviews] = useState<(string | null)[]>([null]);
+  const [isCompressing, setIsCompressing] = useState(false);
 
-  const handleFileChange = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const MAX_WIDTH = 800;  // Reduced to 800px max width
+      const MAX_HEIGHT = 800; // Reduced to 800px max height
+      const QUALITY = 0.5;    // Reduced quality to 50% for maximum compression
+
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // Force JPEG format for aggressive compression
+          canvas.toBlob((blob) => {
+            if (blob) {
+              // Create new file with .jpg extension to match format
+              const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+              const newFile = new File([blob], newFileName, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(newFile);
+            } else {
+              reject(new Error('Compression failed'));
+            }
+          }, 'image/jpeg', QUALITY);
+        };
+        img.onerror = (error) => reject(error);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleFileChange = async (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file size (max 8MB - Cloudinary can handle it, but for mobile data safety)
-      if (file.size > 8 * 1024 * 1024) {
-        alert(locale === 'ar' ? 'حجم الصورة كبير جداً. يرجى اختيار صورة أقل من 8 ميجابايت.' : 'File size too large. Please select an image under 8MB.');
-        event.target.value = ''; // Reset input
+      // Validate file size (max 50MB before compression)
+      if (file.size > 50 * 1024 * 1024) {
+        alert(locale === 'ar' ? 'حجم الصورة كبير جداً.' : 'File size too large.');
+        event.target.value = ''; 
         return;
       }
 
-      const newPreviews = [URL.createObjectURL(file)];
-      setPreviews(newPreviews);
-
-      field.onChange([file]);
+      setIsCompressing(true);
+      try {
+        const compressedFile = await compressImage(file);
+        console.log(`Compressed: ${(file.size / 1024).toFixed(2)}KB -> ${(compressedFile.size / 1024).toFixed(2)}KB`);
+        
+        const newPreviews = [URL.createObjectURL(compressedFile)];
+        setPreviews(newPreviews);
+        field.onChange([compressedFile]);
+      } catch (error) {
+        console.error('Compression failed:', error);
+        alert('Image processing failed. Please try another image.');
+      } finally {
+        setIsCompressing(false);
+      }
     }
   };
 
   return (
     <div className="space-y-4">
-      <label className="block text-sm font-medium text-gray-300">{locale === 'ar' ? 'صورة السيارة (صورة واحدة)' : 'Car Photo (One Photo)'}</label>
+      <label className="block text-sm font-medium text-gray-300">
+        {locale === 'ar' ? 'صورة السيارة (صورة واحدة)' : 'Car Photo (One Photo)'}
+        {isCompressing && <span className="text-yellow-400 text-xs mx-2 animate-pulse">(Processing...)</span>}
+      </label>
       <div className="grid grid-cols-1 gap-4">
         {previews.map((preview, index) => (
           <div key={index} className="w-full h-24 border-2 border-dashed border-gray-600 rounded-lg flex items-center justify-center relative">
@@ -63,12 +132,13 @@ const FileUploader = ({ control, name, t, locale, field }: {
               onChange={(e) => handleFileChange(index, e)}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               suppressHydrationWarning={true}
+              disabled={isCompressing}
             />
             {preview ? (
               <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover rounded-lg" />
             ) : (
               <span className="text-gray-400 text-xs text-center">
-                {t('uploadSlot').replace('{number}', (index + 1).toString())}
+                {isCompressing ? '...' : t('uploadSlot').replace('{number}', (index + 1).toString())}
               </span>
             )}
           </div>

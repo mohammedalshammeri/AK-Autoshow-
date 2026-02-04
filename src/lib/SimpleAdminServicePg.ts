@@ -339,6 +339,73 @@ export class AdminService {
   }
 
   /**
+   * Update admin user
+   */
+  async updateUser(userId: string, data: { email?: string; password?: string; full_name?: string; role?: string; permissions?: any }, requestUserId?: string) {
+    try {
+      const user = await this.getUserById(userId);
+      if (!user) {
+        return { success: false, error: 'User not found' };
+      }
+
+      // Build update query dynamically
+      const updates: string[] = [];
+      const values: any[] = [];
+      let paramCount = 1;
+
+      if (data.email && data.email !== user.email) {
+        // Check uniqueness
+        const existing = await query('SELECT id FROM admin_users WHERE email = $1 AND id != $2', [data.email.toLowerCase(), userId]);
+        if (existing.rows.length > 0) {
+          return { success: false, error: 'Email already in use' };
+        }
+        updates.push(`email = $${paramCount++}`);
+        values.push(data.email.toLowerCase());
+      }
+
+      if (data.full_name) {
+        updates.push(`full_name = $${paramCount++}`);
+        values.push(data.full_name);
+      }
+
+      if (data.role) {
+        updates.push(`role = $${paramCount++}`);
+        values.push(data.role);
+      }
+
+      if (data.permissions) {
+        updates.push(`permissions = $${paramCount++}`);
+        values.push(data.permissions);
+      }
+
+      if (data.password) {
+        const salt = await bcrypt.genSalt(12);
+        const hash = await bcrypt.hash(data.password, salt);
+        updates.push(`password_hash = $${paramCount++}`);
+        values.push(hash);
+      }
+      
+      updates.push(`updated_at = NOW()`);
+
+      // Execute update if there are changes
+      if (updates.length > 0) {
+         values.push(userId); // Add userId as the last parameter
+         await query(
+           `UPDATE admin_users SET ${updates.join(', ')} WHERE id = $${paramCount}`,
+           values
+         );
+         
+         await this.logActivity('update_user', 'admin_users', requestUserId, { updated_user_id: userId, updates: Object.keys(data) }, 'success');
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Failed to update user:', error);
+      return { success: false, error: 'Failed to update user' };
+    }
+  }
+
+  /**
    * Create JWT token locally
    */
   private async createJWTToken(payload: any): Promise<string> {

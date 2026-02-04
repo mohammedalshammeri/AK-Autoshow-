@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
            return NextResponse.json({ success: false, error: 'Image upload failed' }, { status: 500 });
         }
       } else {
-           console.error('Cloudinary not configured and Supabase Storage fallback removed.');
+           console.error('Cloudinary not configured.');
            return NextResponse.json({ success: false, error: 'Storage not configured' }, { status: 500 });
       }
     }

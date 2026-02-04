@@ -2,7 +2,7 @@
 // This creates the admin user in the admin_users table
 
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { query } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
@@ -10,11 +10,12 @@ export async function POST(request: NextRequest) {
 
   try {
     // Check if user already exists
-    const { data: existingUser } = await supabaseAdmin
-      .from('admin_users')
-      .select('*')
-      .eq('email', 'admin@carshowx.app')
-      .single();
+    const existingUserRes = await query(
+      `SELECT * FROM admin_users WHERE email = $1 LIMIT 1`,
+      ['admin@carshowx.app']
+    );
+    
+    const existingUser = existingUserRes.rows[0];
 
     if (existingUser) {
       console.log('✅ Admin user already exists');
@@ -41,56 +42,62 @@ export async function POST(request: NextRequest) {
     const adminUser = {
       email: 'admin@carshowx.app',
       password_hash: hashedPassword,
-      first_name: 'System',
-      last_name: 'Administrator',
+      full_name: 'System Administrator',
       role: 'super_admin',
-      permissions: {
+      permissions: JSON.stringify({
         users: ['create', 'read', 'update', 'delete'],
         cars: ['create', 'read', 'update', 'delete'],
         events: ['create', 'read', 'update', 'delete'],
         content: ['create', 'read', 'update', 'delete'],
         settings: ['create', 'read', 'update', 'delete'],
         system: ['create', 'read', 'update', 'delete']
-      },
+      }),
       is_active: true,
       created_by: null,
       last_login: null,
       login_count: 0
     };
 
-    const { data, error } = await supabaseAdmin
-      .from('admin_users')
-      .insert(adminUser)
-      .select()
-      .single();
+    const insertUserRes = await query(
+      `INSERT INTO admin_users 
+       (email, password_hash, full_name, role, permissions, is_active, created_by, last_login, login_count, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+       RETURNING id, email, full_name, role`,
+      [
+        adminUser.email,
+        adminUser.password_hash,
+        adminUser.full_name,
+        adminUser.role,
+        adminUser.permissions,
+        adminUser.is_active,
+        adminUser.created_by,
+        adminUser.last_login,
+        adminUser.login_count
+      ]
+    );
 
-    if (error) {
-      console.error('❌ Failed to create admin user:', error);
-      return NextResponse.json({
-        success: false,
-        error: 'Failed to create admin user: ' + error.message
-      }, { status: 500 });
-    }
+    const newUser = insertUserRes.rows[0];
 
     console.log('✅ Admin user created successfully!');
 
     // Log the creation
-    const { error: logError } = await supabaseAdmin
-      .from('admin_activity_log')
-      .insert({
-        user_id: data.id,
-        action: 'user_created',
-        entity_type: 'admin_users',
-        entity_id: data.id,
-        details: {
-          email: 'admin@carshowx.app',
-          role: 'super_admin',
-          created_by: 'system_api'
-        },
-        status: 'success'
-      });
-
-    if (logError) {
+    try {
+      await query(
+        `INSERT INTO admin_activity_log (user_id, action, resource_type, details, status, created_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())`,
+        [
+          newUser.id,
+          'user_created',
+          'admin_users',
+          JSON.stringify({
+            email: 'admin@carshowx.app',
+            role: 'super_admin',
+            created_by: 'system_api'
+          }),
+          'success'
+        ]
+      );
+    } catch (logError) {
       console.warn('⚠️  Failed to log user creation:', logError);
     }
 
@@ -98,11 +105,10 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Admin user created successfully!',
       user: {
-        id: data.id,
-        email: data.email,
-        role: data.role,
-        first_name: data.first_name,
-        last_name: data.last_name
+        id: newUser.id,
+        email: newUser.email,
+        role: newUser.role,
+        full_name: newUser.full_name
       },
       credentials: {
         email: 'admin@carshowx.app',

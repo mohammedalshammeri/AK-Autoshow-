@@ -1,9 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import type { User } from '@supabase/supabase-js';
 import { SponsorsTab, SponsorForm } from './../admin/sponsors-tab-addon';
+
+// Local interfaces replacement for Supabase types
+interface User {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+    role?: string;
+  };
+  role?: string;
+  aud?: string;
+  created_at?: string;
+}
 
 interface Registration {
   id: string;
@@ -62,64 +73,69 @@ export default function AdminPage() {
   }, []);
 
   const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
-    if (user) {
-      loadRegistrations();
-      loadEvents();
-      loadAdmins();
-      loadSponsors();
+    try {
+      const res = await fetch('/api/admin/auth/check');
+      const data = await res.json();
+      
+      if (data.success && data.user) {
+        const loggedUser: User = {
+           id: data.user.id,
+           email: data.user.email,
+           role: data.user.role,
+           user_metadata: {
+             full_name: data.user.full_name,
+             role: data.user.role
+           }
+        };
+        setUser(loggedUser);
+        loadRegistrations();
+        loadEvents();
+        loadAdmins();
+        loadSponsors();
+      } else {
+        setUser(null);
+      }
+    } catch (e) {
+      console.error('Auth check failed:', e);
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const loadRegistrations = async () => {
-    console.log('🔍 بدء جلب البيانات بالطريقة الجديدة...');
-    setLoading(true);
+    console.log('🔍 بدء جلب البيانات (API)...');
     
-    const { data, error } = await supabase
-      .from('registrations')
-      .select(`
-        *,
-        car_images (
-          id,
-          image_url
-        )
-      `)
-      .order('created_at', { ascending: false });
+    try {
+      const response = await fetch('/api/admin/registrations');
+      const result = await response.json();
 
-    if (error) {
-      console.error('❌ خطأ فادح في جلب البيانات المترابطة:', error);
-      alert('Failed to load data: ' + error.message);
-      setLoading(false);
-      return;
+      if (result.success) {
+        console.log('✅ تم جلب', result.registrations?.length, 'تسجيل.');
+        setRegistrations(result.registrations || []);
+      } else {
+        console.error('❌ خطأ في جلب التسجيلات:', result.error);
+        // alert('Failed to load registrations: ' + result.error);
+      }
+    } catch (error) {
+      console.error('❌ خطأ في الاتصال:', error);
     }
-
-    console.log('✅ تم جلب', data?.length, 'تسجيل مع صورهم في خطوة واحدة.');
-    
-    if (data && data.length > 0) {
-        console.log('🔍 مثال على البيانات المستلمة (التسجيل الأول):', data[0]);
-        console.log('📸 الصور المرتبطة به:', data[0].car_images);
-    }
-
-    setRegistrations(data || []);
-    setLoading(false);
-    console.log('🎉 تم تحميل جميع التسجيلات بنجاح.');
   };
 
   const loadEvents = async () => {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .order('event_date', { ascending: true });
+    try {
+      const response = await fetch('/api/admin/events');
+      const result = await response.json();
 
-    if (error) {
-      console.error('❌ خطأ في جلب الأحداث:', error);
-      return;
+      if (result.success) {
+        setEvents(result.events || []);
+        console.log('✅ تم جلب الأحداث:', result.events?.length);
+      } else {
+        console.error('❌ خطأ في جلب الأحداث:', result.error);
+      }
+    } catch (error) {
+      console.error('❌ خطأ في الاتصال:', error);
     }
-
-    setEvents(data || []);
-    console.log('✅ تم جلب الأحداث:', data?.length);
   };
 
   const loadAdmins = async () => {
@@ -307,22 +323,54 @@ export default function AdminPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      alert('خطأ في تسجيل الدخول: ' + error.message);
-    } else if (data.user) {
-      setUser(data.user);
-      loadRegistrations();
-      loadEvents();
-      loadAdmins();
-      loadSponsors();
+    try {
+      setLoading(true);
+      const res = await fetch('/api/admin/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        // Map API user format to local User interface
+        const loggedUser: User = {
+           id: data.user.id,
+           email: data.user.email,
+           role: data.user.role,
+           user_metadata: {
+             full_name: data.user.full_name,
+             role: data.user.role
+           }
+        };
+        setUser(loggedUser);
+        
+        // Load data after successful login
+        await Promise.all([
+          loadRegistrations(),
+          loadEvents(),
+          loadAdmins(),
+          loadSponsors()
+        ]);
+      } else {
+        alert('فشل تسجيل الدخول: ' + (data.error || 'خطأ غير معروف'));
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      alert('حدث خطأ أثناء تسجيل الدخول');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setRegistrations([]);
+    try {
+      await fetch('/api/admin/auth/logout', { method: 'POST' });
+      setUser(null);
+      setRegistrations([]);
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
   };
 
   if (loading) {

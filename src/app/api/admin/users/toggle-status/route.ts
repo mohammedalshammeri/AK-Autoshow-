@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { query } from '@/lib/db';
 import { cookies } from 'next/headers';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
 export async function POST(request: NextRequest) {
-  try {    // Check authentication
+  try {
+    // Check authentication
     const token = request.cookies.get('carshowx_admin_token')?.value;
     
     if (!token) {
@@ -19,14 +15,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify admin session
-    const { data: session } = await supabase
-      .from('admin_sessions')
-      .select('user_id, is_active')
-      .eq('session_token', token)
-      .eq('is_active', true)
-      .single();
+    const sessionResult = await query(
+      `SELECT user_id, is_active FROM admin_sessions 
+       WHERE session_token = $1 AND is_active = true`,
+      [token]
+    );
 
-    if (!session) {
+    if (sessionResult.rows.length === 0) {
       return NextResponse.json(
         { error: 'Invalid session' },
         { status: 401 }
@@ -45,25 +40,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Update user status
-    const { error: updateError } = await supabase
-      .from('admin_users')
-      .update({ 
-        is_active: isActive,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
-
-    if (updateError) {
-      console.error('Error updating user status:', updateError);
-      return NextResponse.json(
-        { error: 'Failed to update user status' },
-        { status: 500 }
-      );
-    }
+    await query(
+      `UPDATE admin_users SET is_active = $1, updated_at = NOW() WHERE id = $2`,
+      [isActive, userId]
+    );
 
     return NextResponse.json({
       success: true,
-      message: `User ${isActive ? 'activated' : 'deactivated'} successfully`
+      message: `User status updated to ${isActive ? 'active' : 'inactive'}`
     });
 
   } catch (error) {

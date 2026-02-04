@@ -1,8 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-// import { supabase } from '@/lib/supabaseClient';
-import type { User } from '@supabase/supabase-js';
+// Local interfaces replacement for database types
+interface User {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
+  role?: string;
+}
+
 import { sendApprovalEmail, sendRejectionEmail } from '@/app/_actions';
 
 // Layout Components

@@ -463,7 +463,7 @@ export default function HomePageClient({ events }: { events: any[] }) {
                     />
                 </div>
             </div>
-            <h1 id="hero-title" className="text-4xl md:text-6xl lg:text-7xl font-heading font-extrabold text-text-primary leading-tight mb-6 hidden">
+            <h1 id="hero-title" className="text-4xl md:text-6xl lg:text-7xl font-heading font-extrabold text-text-primary leading-tight mb-6">
               {t.hero.title}
             </h1>
             

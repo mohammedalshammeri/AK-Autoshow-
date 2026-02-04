@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
 
 interface ImageUploadProps {
   currentImageUrl?: string;
@@ -74,62 +73,15 @@ export function ImageUpload({
           publicUrl = result.url;
           console.log('✅ تم الرفع إلى Cloudinary بنجاح:', publicUrl);
         } else {
-          console.warn('⚠️ فشل الرفع إلى Cloudinary، سيتم المحاولة عبر Supabase');
+          console.warn('⚠️ فشل الرفع إلى Cloudinary.');
         }
       } catch (e) {
         console.error('❌ خطأ في الاتصال بـ Cloudinary API:', e);
       }
 
-      // إذا فشل Cloudinary، نستخدم Supabase
+      // إذا فشل Cloudinary، نظهر خطأ
       if (!publicUrl) {
-         // رفع الصورة إلى Supabase Storage
-        let { data, error } = await supabase.storage
-            .from(bucket)
-            .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
-            });
-
-        if (error) {
-            console.error('❌ خطأ في رفع الصورة Supabase:', error);
-            
-            // إذا كانت المشكلة في البucket، حاول إنشاؤه
-            if (error.message.includes('The resource was not found')) {
-            console.log('🔄 محاولة إنشاء bucket جديد...');
-            await createBucket();
-            
-            // إعادة المحاولة
-            const { data: retryData, error: retryError } = await supabase.storage
-                .from(bucket)
-                .upload(fileName, file, {
-                cacheControl: '3600',
-                upsert: false
-                });
-
-            if (retryError) {
-                throw retryError;
-            }
-            
-            data = retryData;
-            } else {
-            throw error;
-            }
-        }
-
-        if (!data?.path) {
-            throw new Error('فشل في رفع الصورة');
-        }
-
-        // الحصول على الرابط العام
-        const { data: urlData } = supabase.storage
-            .from(bucket)
-            .getPublicUrl(data.path);
-
-        if (!urlData?.publicUrl) {
-            throw new Error('فشل في الحصول على رابط الصورة');
-        }
-        
-        publicUrl = urlData.publicUrl;
+         throw new Error('فشل الرفع إلى Cloudinary. يرجى التحقق من الاتصال أو المحاولة لاحقاً.');
       }
 
       console.log('✅ الصورة جاهزة:', publicUrl);
@@ -141,27 +93,6 @@ export function ImageUpload({
       setPreview(currentImageUrl || null);
     } finally {
       setUploading(false);
-    }
-  };
-
-  const createBucket = async () => {
-    try {
-      console.log(`🔄 إنشاء bucket: ${bucket}`);
-      
-      const { data, error } = await supabase.storage.createBucket(bucket, {
-        public: true,
-        allowedMimeTypes: ['image/*'],
-        fileSizeLimit: 5242880 // 5MB
-      });
-
-      if (error && !error.message.includes('already exists')) {
-        throw error;
-      }
-
-      console.log('✅ تم إنشاء bucket بنجاح');
-    } catch (error) {
-      console.error('❌ خطأ في إنشاء bucket:', error);
-      throw error;
     }
   };
 

@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSecurityHeaders } from '@/lib/auth';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { query } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,14 +23,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify session
-    const { data: session, error: sessionError } = await supabaseAdmin
-      .from('admin_sessions')
-      .select('user_id, is_active')
-      .eq('session_token', token)
-      .eq('is_active', true)
-      .single();
+    const sessionRes = await query(
+      `SELECT user_id, is_active FROM admin_sessions 
+       WHERE session_token = $1 AND is_active = true`,
+      [token]
+    );
 
-    if (sessionError || !session) {
+    const session = sessionRes.rows[0];
+
+    if (!session) {
       return NextResponse.json(
         { success: false, error: 'Invalid session' },
         { 
@@ -38,30 +39,33 @@ export async function GET(request: NextRequest) {
           headers: getSecurityHeaders()
         }
       );
-    }    // Get all car registrations
-    const { data: cars, error: carsError } = await supabaseAdmin
-      .from('registrations')
-      .select('id, car_make as make, car_model as model, car_year as year, full_name as owner_name, email as owner_email, phone_number as owner_phone, status, created_at')
-      .order('created_at', { ascending: false });
-
-    if (carsError) {
-      console.error('❌ Failed to load cars:', carsError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to load cars' },
-        { 
-          status: 500,
-          headers: getSecurityHeaders()
-        }
-      );
     }
 
-    console.log(`✅ Loaded ${cars?.length || 0} car registrations`);
+    // Get all car registrations
+    const carsRes = await query(
+      `SELECT 
+        id, 
+        car_make as make, 
+        car_model as model, 
+        car_year as year, 
+        full_name as owner_name, 
+        email as owner_email, 
+        phone_number as owner_phone, 
+        status, 
+        created_at
+       FROM registrations
+       ORDER BY created_at DESC`
+    );
+
+    const cars = carsRes.rows;
+
+    console.log(`✅ Loaded ${cars.length} car registrations`);
 
     return NextResponse.json(
       { 
         success: true, 
-        cars: cars || [],
-        total: cars?.length || 0
+        cars: cars,
+        total: cars.length
       },
       { 
         status: 200,
