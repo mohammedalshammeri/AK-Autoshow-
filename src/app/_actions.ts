@@ -6,6 +6,9 @@ import RejectionEmail from '@/emails/RejectionEmail';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { query } from '@/lib/db';
 
+// Allow this server action to run for up to 60 seconds (Vercel Limit) to handle image uploads
+export const maxDuration = 60;
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export interface RegistrationResult {

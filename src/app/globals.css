@@ -112,3 +112,18 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+
+/* Print Optimizations for Proposal */
+@media print {
+  @page { margin: 0; size: auto; }
+  body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background-color: #050505 !important; color: white !important; }
+  /* Hide interactive elements */
+  button[title='Print Proposal'], header button, nav { display: none !important; }
+  /* Fix header for print */
+  header { position: absolute !important; background: black !important; }
+  /* Ensure text contrast */
+  p, h1, h2, h3, h4, li { color: white !important; text-shadow: none !important; }
+  /* Expand sections */
+  section { break-inside: avoid; page-break-inside: avoid; }
+}

@@ -14,6 +14,9 @@ interface RegistrationResult {
   qrCodes?: { plate: string, code: string }[];
 }
 
+// Allow server actions in this file to run for up to 60 seconds
+export const maxDuration = 60;
+
 // Neon-backed registration (no Supabase)
 // export const maxDuration = 60; // Set timeout to 60 seconds (Hobby limit usually 10s, Pro 60s)  <-- REMOVED because Next.js only allows async exports in server actions
 export async function registerAction(formData: FormData): Promise<RegistrationResult> {
