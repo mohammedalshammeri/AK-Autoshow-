@@ -38,13 +38,63 @@ export async function GET(request: NextRequest) {
 }
 
 // POST - Create new admin user
-// TODO: Implement create using AdminService (needs new method)
 export async function POST(request: NextRequest) {
-    return NextResponse.json({ success: false, error: "Not implemented yet for Pg" }, { status: 501 });
+  try {
+    const body = await request.json();
+    const { email, password, full_name, role } = body;
+
+    if (!email || !password || !full_name || !role) {
+      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
+    }
+
+    const adminService = new AdminService();
+    // TODO: Get current user ID from session/token for 'createdBy'
+    const result = await adminService.createUser({ email, password, full_name, role });
+
+    if (!result.success) {
+      return NextResponse.json({ success: false, error: result.error }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true, user: result.user });
+  } catch (error) {
+    console.error('❌ Error creating user:', error);
+    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
+  }
 }
 
 // DELETE - Delete admin user
-// TODO: Implement delete using AdminService (needs new method)
 export async function DELETE(request: NextRequest) {
-    return NextResponse.json({ success: false, error: "Not implemented yet for Pg" }, { status: 501 });
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('id');
+
+    // Also try checking body if searchParams extraction fails or is preferred
+    // But standard REST often uses ID in URL path or query for collection delete (though weird for collection root)
+    let finalUserId = userId;
+    if (!finalUserId) {
+        try {
+            const body = await request.json();
+            finalUserId = body.id;
+        } catch (e) {
+            // Ignore body parse error, maybe it was just query params
+        }
+    }
+
+    if (!finalUserId) {
+      return NextResponse.json({ success: false, error: "User ID is required" }, { status: 400 });
+    }
+
+    const adminService = new AdminService();
+    // TODO: Get current user ID for 'requestingUserId' to prevent self-deletion
+    const result = await adminService.deleteUser(finalUserId);
+
+    if (!result.success) {
+        return NextResponse.json({ success: false, error: result.error }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('❌ Error deleting user:', error);
+    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
+  }
 }

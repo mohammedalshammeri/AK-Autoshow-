@@ -265,6 +265,80 @@ export class AdminService {
   }
 
   /**
+   * Create a new admin user
+   */
+  async createUser(data: { email: string; password?: string; full_name: string; role: string; permissions?: any }, createdBy?: string) {
+    try {
+      // Check if user exists
+      const existingUser = await query('SELECT id FROM admin_users WHERE email = $1', [data.email.toLowerCase()]);
+      if (existingUser.rows.length > 0) {
+        return { success: false, error: 'User with this email already exists' };
+      }
+
+      // Hash password
+      const password = data.password || crypto.randomUUID(); // Generate random if not provided (though usually required)
+      const salt = await bcrypt.genSalt(12);
+      const passwordHash = await bcrypt.hash(password, salt);
+
+      // Insert user
+      const res = await query(
+        `INSERT INTO admin_users (email, password_hash, full_name, role, permissions, is_active, created_by, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+         RETURNING id, email, full_name, role, created_at`,
+        [
+          data.email.toLowerCase(),
+          passwordHash,
+          data.full_name,
+          data.role,
+          data.permissions || {},
+          true,
+          createdBy || null
+        ]
+      );
+
+      const newUser = res.rows[0];
+      
+      await this.logActivity('create_user', 'admin_users', createdBy, { created_user_id: newUser.id, email: newUser.email }, 'success');
+
+      return { success: true, user: newUser };
+    } catch (error) {
+      console.error('❌ Failed to create user:', error);
+      return { success: false, error: 'Failed to create user' };
+    }
+  }
+
+  /**
+   * Delete admin user
+   */
+  async deleteUser(userId: string, requestingUserId?: string) {
+    try {
+      if (userId === requestingUserId) {
+        return { success: false, error: 'Cannot delete your own account' };
+      }
+
+      // Check if user exists
+      const user = await this.getUserById(userId);
+      if (!user) {
+        return { success: false, error: 'User not found' };
+      }
+
+      // Delete (or soft delete)
+      // Hard delete for now as per likely requirement, but we should probably delete sessions first due to FK?
+      // Assuming ON DELETE CASCADE on sessions, logs might stay.
+      
+      await query('DELETE FROM admin_sessions WHERE user_id = $1', [userId]);
+      await query('DELETE FROM admin_users WHERE id = $1', [userId]);
+
+      await this.logActivity('delete_user', 'admin_users', requestingUserId, { deleted_user_id: userId, email: user.email }, 'success');
+
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Failed to delete user:', error);
+      return { success: false, error: 'Failed to delete user' };
+    }
+  }
+
+  /**
    * Create JWT token locally
    */
   private async createJWTToken(payload: any): Promise<string> {
