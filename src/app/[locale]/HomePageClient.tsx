@@ -102,7 +102,7 @@ export default function HomePageClient({ events }: { events: any[] }) {
   const [heroLogoOk, setHeroLogoOk] = useState(true);
   const heroVideoRef = useRef<HTMLVideoElement | null>(null);
   
-  const heroVideoSrc = '/تحسين_الفيديو_وتقديمه.mp4';
+  const heroVideoSrc = '/home-hero.mp4';
   
   useEffect(() => {
     // Force detection from URL
