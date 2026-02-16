@@ -220,7 +220,7 @@ export default function AdminLoginPage() {
                   autoComplete="current-password"
                   required
                   className="appearance-none relative block w-full pl-10 pr-10 py-3 border border-gray-600 placeholder-gray-400 text-white rounded-lg bg-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm transition-colors"
-                  placeholder="AKAutoshow@2025!"
+                  placeholder="************"
                   value={formData.password}
                   onChange={handleInputChange}
                 />
