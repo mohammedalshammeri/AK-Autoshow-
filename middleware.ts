@@ -110,7 +110,7 @@ export default async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match ALL paths except static files
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.svg$|.*\\.ico$).*)',
+    // Match ALL paths except static files and API routes
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.svg$|.*\\.ico$|.*\\.mp4$|.*\\.webm$|.*\\.mp3$|.*\\.mp4$|.*\\.webm$|.*\\.mp3$).*)',
   ]
 };
