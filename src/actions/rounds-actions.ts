@@ -73,7 +73,7 @@ export async function getRoundParticipants(roundId: string) {
         ) as registrations
       FROM round_participants rp
       LEFT JOIN registrations r ON rp.registration_id = r.id
-      LEFT JOIN users u ON r.user_id = u.id
+      LEFT JOIN users u ON u.registration_id = r.id
       WHERE rp.round_id = $1
       ORDER BY rp.final_score DESC NULLS LAST
     `;

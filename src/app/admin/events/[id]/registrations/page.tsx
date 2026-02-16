@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import { getEventRegistrations, getEventDetails } from '@/actions/event-admin-actions';
 import { approveRacerRegistration } from '@/app/_actions';
 import Link from 'next/link';
@@ -32,11 +32,7 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
   // Modal State
   const [previewImage, setPreviewImage] = useState<{src: string, alt: string} | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [id]);
-
-  const loadData = async () => {
+    const loadData = useCallback(async () => {
     setLoading(true);
         setAccessError(null);
     const [regRes, eventRes] = await Promise.all([
@@ -62,7 +58,11 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
             setEvent(null);
         }
     setLoading(false);
-  };
+    }, [id]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
   const handleApprove = async (regId: string) => {
       // confirm is good but users hate blocking popups. Let's trust the button text.
