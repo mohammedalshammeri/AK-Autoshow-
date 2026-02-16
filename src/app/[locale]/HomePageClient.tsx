@@ -103,6 +103,7 @@ export default function HomePageClient({ events }: { events: any[] }) {
   const heroVideoRef = useRef<HTMLVideoElement | null>(null);
   
   const heroVideoSrc = '/home-hero.mp4';
+  const primaryEventId = String(events?.[0]?.id ?? '5');
   
   useEffect(() => {
     // Force detection from URL
@@ -497,9 +498,9 @@ export default function HomePageClient({ events }: { events: any[] }) {
         <section className="relative min-h-[70vh] flex items-center justify-center text-center bg-gradient-to-br from-purple-950 via-black to-black">
           <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 via-black/50 to-black/80"></div>          <div className="relative z-10 container mx-auto px-6 py-20">
             {/* Hero Video */}
-            {heroLogoOk && (
-              <div className="flex justify-center mb-8 relative w-full max-w-2xl mx-auto z-10">
-                <div className="animate-fade-in-up rounded-3xl overflow-hidden border border-white/10 bg-white/95 p-2 md:p-3">
+            <div className="flex justify-center mb-8 relative w-full max-w-2xl mx-auto z-10">
+              <div className="animate-fade-in-up rounded-3xl overflow-hidden border border-white/10 bg-white/95 p-2 md:p-3">
+                {heroLogoOk ? (
                   <video
                     ref={heroVideoRef}
                     src={heroVideoSrc}
@@ -508,11 +509,19 @@ export default function HomePageClient({ events }: { events: any[] }) {
                     loop
                     playsInline
                     preload="auto"
+                    muted
+                    poster="/placeholder-hero.jpg"
                     onError={() => setHeroLogoOk(false)}
                   />
-                </div>
+                ) : (
+                  <img
+                    src="/placeholder-hero.jpg"
+                    alt="Hero"
+                    className="max-h-40 md:max-h-56 lg:max-h-64 w-auto object-contain"
+                  />
+                )}
               </div>
-            )}
+            </div>
             <h1 id="hero-title" className="text-4xl md:text-6xl lg:text-7xl font-heading font-extrabold text-text-primary leading-tight mb-6">
               {t.hero.title}
             </h1>
@@ -544,8 +553,9 @@ export default function HomePageClient({ events }: { events: any[] }) {
                 {t.hero.description}
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">              <Link 
-                href={`/${activeLocale}/e/5`}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Link 
+                href={`/${activeLocale}/e/${primaryEventId}`}
                 className="bg-gradient-to-r from-purple-600 via-violet-600 to-purple-800 hover:opacity-90 text-white font-bold py-4 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl w-full sm:w-auto"
               >
                 {t.hero.registerNow}
@@ -754,7 +764,7 @@ export default function HomePageClient({ events }: { events: any[] }) {
 
                   <div className="flex justify-center">
                     <Link
-                      href={`/${activeLocale}/e/5`}
+                      href={`/${activeLocale}/e/${String(driftEvent.id)}`}
                       className="bg-gradient-to-r from-purple-600 via-violet-600 to-purple-800 hover:opacity-90 text-white font-bold py-4 px-10 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl"
                     >
                       {activeLocale === 'ar' ? 'التسجيل' : 'Register'}
