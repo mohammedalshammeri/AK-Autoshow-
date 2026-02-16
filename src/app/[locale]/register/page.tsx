@@ -299,7 +299,11 @@ export default function RegisterPage() {
     const keys = key.split('.');
     let value: any = translations[activeLocale as 'ar' | 'en'];
     for (const k of keys) {
-      value = value?.[k];
+      if (value && typeof value === 'object') {
+        value = value[k];
+      } else {
+        return key;
+      }
     }
     return value || key;
   };
@@ -543,7 +547,7 @@ export default function RegisterPage() {
                   suppressHydrationWarning={true}
                 >
                   <option value="">{loadingEvents ? 'Loading events...' : t('selectEvent')}</option>
-                  {events.map(event => (
+                  {Array.isArray(events) && events.map(event => (
                     <option key={event.id} value={event.id.toString()}>{event.name}</option>
                   ))}
                 </select>
@@ -560,7 +564,7 @@ export default function RegisterPage() {
                     suppressHydrationWarning={true}
                   >
                     <option value="">{loadingMakes ? 'Loading makes...' : t('selectMake')}</option>
-                    {carMakes.map(make => (
+                    {Array.isArray(carMakes) && carMakes.map(make => (
                       <option key={make.Make_ID} value={make.Make_Name}>{make.Make_Name}</option>
                     ))}
                   </select>
@@ -576,7 +580,7 @@ export default function RegisterPage() {
                     suppressHydrationWarning={true}
                   >
                     <option value="">{loadingModels ? 'Loading models...' : t('selectModel')}</option>
-                    {availableModels.map(model => (
+                    {Array.isArray(availableModels) && availableModels.map(model => (
                       <option key={model.Model_ID} value={model.Model_Name}>{model.Model_Name}</option>
                     ))}
                   </select>

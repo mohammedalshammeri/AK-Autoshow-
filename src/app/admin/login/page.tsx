@@ -139,7 +139,7 @@ export default function AdminLoginPage() {
         <div className="text-center">
           <Link href="/" className="inline-block">
             <h1 className="text-4xl font-bold text-white mb-2">
-              CarShow<span className="text-red-500">X</span>
+              AK<span className="text-red-500">Autoshow</span>
             </h1>
           </Link>
           <div className="w-16 h-1 bg-red-500 mx-auto mb-6"></div>
@@ -195,7 +195,7 @@ export default function AdminLoginPage() {
                   autoComplete="email"
                   required
                   className="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-600 placeholder-gray-400 text-white rounded-lg bg-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm transition-colors"
-                  placeholder="admin@carshowx.app"
+                  placeholder="admin@akautoshow.com"
                   value={formData.email}
                   onChange={handleInputChange}
                 />
@@ -220,7 +220,7 @@ export default function AdminLoginPage() {
                   autoComplete="current-password"
                   required
                   className="appearance-none relative block w-full pl-10 pr-10 py-3 border border-gray-600 placeholder-gray-400 text-white rounded-lg bg-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm transition-colors"
-                  placeholder="CarShowX@2025!"
+                  placeholder="AKAutoshow@2025!"
                   value={formData.password}
                   onChange={handleInputChange}
                 />
@@ -285,7 +285,7 @@ export default function AdminLoginPage() {
 
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500">
-              Default: admin@carshowx.app / CarShowX@2025!
+              Default: admin@akautoshow.com / AKAutoshow@2025!
             </p>
           </div>
         </div>
@@ -298,7 +298,7 @@ export default function AdminLoginPage() {
             <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
             </svg>
-            Back to CarShowX
+            Back to AK Autoshow
           </Link>
         </div>
       </div>

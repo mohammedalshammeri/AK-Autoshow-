@@ -23,7 +23,19 @@ interface GroupFormProps {
   events: any[];
 }
 
-export default function GroupRegistrationForm({ t, locale, events }: GroupFormProps) {
+// Safe list mapping
+const EventOptions = ({ events }: { events: any[] }) => {
+    if (!events || !Array.isArray(events)) return null;
+    return (
+        <>
+        {events.map(e => (
+            <option key={e.id} value={e.id}>{e.name}</option>
+        ))}
+        </>
+    );
+};
+
+export default function GroupRegistrationForm({ t, locale, events = [] }: GroupFormProps) {
   const [isPending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<boolean>(false);
@@ -211,7 +223,7 @@ export default function GroupRegistrationForm({ t, locale, events }: GroupFormPr
                  <label className="block text-sm text-gray-400 mb-1">{t('event')}</label>
                 <select {...register('eventId')} className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-white">
                     <option value="">{t('selectEvent')}</option>
-                    {events.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                    <EventOptions events={events} />
                 </select>
                 {errors.eventId && <p className="text-red-500 text-xs">{errors.eventId.message}</p>}
              </div>
@@ -268,7 +280,10 @@ export default function GroupRegistrationForm({ t, locale, events }: GroupFormPr
                          <select 
                             {...register(`cars.${index}.make` as const)}
                             onChange={(e) => {
-                                register(`cars.${index}.make`).onChange(e);
+                                // Must use setValue for proper RHF update alongside custom logic, or just let RHF handle it via register
+                                // The register return value includes onChange
+                                const handler = register(`cars.${index}.make`).onChange;
+                                if(handler) handler(e);
                                 loadModels(e.target.value);
                             }}
                             className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm"
@@ -286,7 +301,11 @@ export default function GroupRegistrationForm({ t, locale, events }: GroupFormPr
                             className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm"
                          >
                             <option value="">{t('selectModel')}</option>
-                             {(modelsCache[watch(`cars.${index}.make`)] || []).map(m => (
+                             {/* Safe access to models cache */}
+                             {(modelsCache && modelsCache[watch(`cars.${index}.make`)] 
+                                ? modelsCache[watch(`cars.${index}.make`)] 
+                                : []
+                             ).map(m => (
                                  <option key={m.Model_ID} value={m.Model_Name}>{m.Model_Name}</option>
                              ))}
                          </select>

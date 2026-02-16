@@ -54,7 +54,7 @@ export function AdminSidebar({ activeTab, setActiveTab, counts, className = '', 
              <span className="font-bold text-white text-xl">AK</span>
           </div>
           <div>
-            <h1 className="font-bold text-white text-lg leading-tight">AK Auto</h1>
+            <h1 className="font-bold text-white text-lg leading-tight">AK Autoshow</h1>
             <p className="text-xs text-indigo-400 font-medium tracking-wide">Admin Panel</p>
           </div>
         </div>

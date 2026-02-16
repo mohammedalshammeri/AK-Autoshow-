@@ -32,17 +32,43 @@ const FileUploader = ({ control, name, label, t, field, required = false }: any)
   const [preview, setPreview] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Buffer t function
+  const safeT = (key: string) => {
+    if (typeof t === 'function') return t(key);
+    return key;
+  };
+
+  const safeOnChange = (file: File) => {
+     if (field && typeof field.onChange === 'function') {
+         field.onChange(file);
+     }
+  };
+
+  // Cleanup object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (preview && !preview.startsWith('data:')) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
+
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        alert(safeT('fileSizeError') || 'File size too large (max 10MB)');
+        e.target.value = '';
+        return;
+      }
+      
       setIsProcessing(true);
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setPreview(ev.target?.result as string);
-        setIsProcessing(false);
-      };
-      reader.readAsDataURL(file);
-      field.onChange(file);
+      // Use createObjectURL instead of FileReader to prevents memory crashes on Android
+      const objectUrl = URL.createObjectURL(file);
+      setPreview(objectUrl);
+      setIsProcessing(false);
+      
+      safeOnChange(file);
     }
   };
 
@@ -51,13 +77,13 @@ const FileUploader = ({ control, name, label, t, field, required = false }: any)
       <label className="block text-sm font-medium text-gray-300">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
-      <div className={`w-full h-32 border-2 border-dashed ${field.value ? 'border-green-500' : 'border-gray-600'} rounded-xl flex items-center justify-center relative hover:bg-gray-800/50 transition-colors`}>
+      <div className={`w-full h-32 border-2 border-dashed ${field?.value ? 'border-green-500' : 'border-gray-600'} rounded-xl flex items-center justify-center relative hover:bg-gray-800/50 transition-colors`}>
         <input type="file" onChange={handleFile} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" />
         {preview ? (
           <img src={preview} className="h-full object-contain rounded-lg p-1" />
         ) : (
           <div className="text-center text-gray-500 text-sm">
-            {isProcessing ? 'Processing...' : (t('clickToUpload') || 'Click to Upload')}
+            {isProcessing ? 'Processing...' : (safeT('clickToUpload') || 'Click to Upload')}
           </div>
         )}
       </div>
@@ -82,7 +108,10 @@ export default function DynamicEventPage({ params }: { params: Promise<{ id: str
   // Translation Helper
   // Drift-specific detailed terms
   const getDriftTerms = () => {
-    if (currentLocale === 'ar') {
+    // Ensure currentLocale is valid
+    const lang = (currentLocale === 'ar' || currentLocale === 'en') ? currentLocale : 'en';
+
+    if (lang === 'ar') {
       return `
 1️⃣ الالتزام بالأنظمة والقوانين
 أُقر بالتزامي الكامل بجميع القوانين والأنظمة المعمول بها في المملكة، وبالقوانين الخاصة بالفعالية.
@@ -394,10 +423,9 @@ Any car will be rejected if it is not ready in the inspection/registration area.
 
     if (currentStep === 2) {
       const carImage = watch('carImages');
-      if (!carImage || !(carImage instanceof File) || carImage.size <= 0) {
-        setErrorMsg(currentLocale === 'ar'
-          ? 'صورة السيارة مطلوبة.'
-          : 'Car photo is required.');
+      // Added safety check for File instance
+      if (!carImage || (carImage instanceof File && carImage.size <= 0)) {
+        setErrorMsg(safeT('carPhoto') + ' ' + (currentLocale === 'ar' ? 'مطلوبة.' : 'is required.'));
         return;
       }
     }
