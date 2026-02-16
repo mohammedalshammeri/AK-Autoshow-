@@ -113,14 +113,45 @@ export async function PUT(request: NextRequest) {
     if (!token) return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
 
     const body = await request.json();
-    const { id, status } = body;
+    const { id, ...rest } = body || {};
 
-    if (!id || !status) return NextResponse.json({ success: false, error: 'ID and status required' }, { status: 400 });
+    if (!id) return NextResponse.json({ success: false, error: 'ID required' }, { status: 400 });
 
-    const result = await query(
-      `UPDATE registrations SET status = $1 WHERE id = $2 RETURNING *`,
-      [status, id]
-    );
+    const allowedFields = new Set([
+      'status',
+      'full_name',
+      'email',
+      'phone_number',
+      'car_make',
+      'car_model',
+      'car_year',
+      'car_category',
+      'has_passenger',
+      'passenger_name',
+    ]);
+
+    const updates: Record<string, any> = {};
+    for (const [key, value] of Object.entries(rest)) {
+      if (!allowedFields.has(key)) continue;
+      if (typeof value === 'undefined') continue;
+      updates[key] = value;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ success: false, error: 'No valid fields to update' }, { status: 400 });
+    }
+
+    const setClauses: string[] = [];
+    const values: any[] = [];
+
+    for (const [key, value] of Object.entries(updates)) {
+      values.push(value);
+      setClauses.push(`${key} = $${values.length}`);
+    }
+
+    values.push(id);
+    const sql = `UPDATE registrations SET ${setClauses.join(', ')} WHERE id = $${values.length} RETURNING *`;
+    const result = await query(sql, values);
 
     return NextResponse.json({ success: true, registration: result.rows[0] });
   } catch (error: any) {

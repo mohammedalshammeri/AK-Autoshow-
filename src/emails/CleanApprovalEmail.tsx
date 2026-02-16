@@ -9,6 +9,13 @@ import {
 } from '@react-email/components';
 import * as React from 'react';
 
+const bsmcLinks = {
+  website: 'https://www.bsmc.bh',
+  instagram: 'https://instagram.com/bsmc.mena',
+  whatsapp: 'https://wa.me/97338409977',
+  logo: 'https://akautoshow.com/BSMC.BH1.jpg',
+};
+
 interface CleanApprovalEmailProps {
   participantName?: string;
   eventName?: string;
@@ -154,6 +161,29 @@ const CleanApprovalEmail = ({
               Best regards,<br />
               The AK AutoShow Team
             </Text>
+
+            {/* BSMC Signature */}
+            <Section style={bsmcFooterSection}>
+              <div style={{ textAlign: 'center' as const }}>
+                <a href={bsmcLinks.website} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                  <Img
+                    src={bsmcLinks.logo}
+                    width="120"
+                    alt="BSMC"
+                    style={{ margin: '0 auto', borderRadius: '6px' }}
+                  />
+                </a>
+              </div>
+              <Text style={bsmcFooterText}>
+                Platform by <a href={bsmcLinks.website} target="_blank" rel="noopener noreferrer" style={bsmcLink}>BSMC</a>
+                {' '}•{' '}
+                <a href={bsmcLinks.instagram} target="_blank" rel="noopener noreferrer" style={bsmcLink}>Instagram</a>
+                {' '}•{' '}
+                <a href={bsmcLinks.website} target="_blank" rel="noopener noreferrer" style={bsmcLink}>Website</a>
+                {' '}•{' '}
+                <a href={bsmcLinks.whatsapp} target="_blank" rel="noopener noreferrer" style={bsmcLink}>WhatsApp</a>
+              </Text>
+            </Section>
           </Section>
         </Container>
       </Body>
@@ -228,6 +258,25 @@ const signature = {
   color: '#FFFFFF',
   textAlign: 'center' as const,
   margin: '32px 0',
+};
+
+const bsmcFooterSection = {
+  marginTop: '12px',
+  paddingTop: '16px',
+  borderTop: '1px solid #333333',
+};
+
+const bsmcFooterText = {
+  fontSize: '12px',
+  lineHeight: '18px',
+  textAlign: 'center' as const,
+  color: '#9CA3AF',
+  margin: '10px 0 0',
+};
+
+const bsmcLink = {
+  color: '#E5E7EB',
+  textDecoration: 'underline',
 };
 
 export default CleanApprovalEmail;

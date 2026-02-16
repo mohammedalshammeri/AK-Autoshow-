@@ -9,6 +9,13 @@ import {
 } from '@react-email/components';
 import * as React from 'react';
 
+const bsmcLinks = {
+  website: 'https://www.bsmc.bh',
+  instagram: 'https://instagram.com/bsmc.mena',
+  whatsapp: 'https://wa.me/97338409977',
+  logo: 'https://akautoshow.com/BSMC.BH1.jpg'
+};
+
 interface RejectionEmailProps {
   participantName?: string;
   eventName?: string;
@@ -72,6 +79,23 @@ export const RejectionEmail = ({
             <Text style={footerText}>
               © {currentYear} AK Auto Show. All rights reserved.
             </Text>
+
+            <div style={{ marginTop: '12px' }}>
+              <div style={{ textAlign: 'center' as const }}>
+                <a href={bsmcLinks.website} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                  <Img src={bsmcLinks.logo} width="110" alt="BSMC" style={{ margin: '0 auto', borderRadius: '6px' }} />
+                </a>
+              </div>
+              <Text style={bsmcFooterText}>
+                Platform by <a href={bsmcLinks.website} target="_blank" rel="noopener noreferrer" style={bsmcLink}>BSMC</a>
+                {' '}•{' '}
+                <a href={bsmcLinks.instagram} target="_blank" rel="noopener noreferrer" style={bsmcLink}>Instagram</a>
+                {' '}•{' '}
+                <a href={bsmcLinks.website} target="_blank" rel="noopener noreferrer" style={bsmcLink}>Website</a>
+                {' '}•{' '}
+                <a href={bsmcLinks.whatsapp} target="_blank" rel="noopener noreferrer" style={bsmcLink}>WhatsApp</a>
+              </Text>
+            </div>
           </Section>
         </Container>
       </Body>
@@ -151,6 +175,19 @@ const footerText = {
   fontSize: '12px',
   margin: '0',
   lineHeight: '1.4',
+};
+
+const bsmcFooterText = {
+  color: '#9CA3AF',
+  fontSize: '12px',
+  margin: '10px 0 0',
+  lineHeight: '1.6',
+  textAlign: 'center' as const,
+};
+
+const bsmcLink = {
+  color: '#E5E7EB',
+  textDecoration: 'underline',
 };
 
 export default RejectionEmail;

@@ -13,6 +13,17 @@ interface AdminUser {
   last_login: string;
 }
 
+function getRoleBadge(role: string) {
+  const r = (role || '').toLowerCase();
+  if (r === 'super_admin') return { label: '🔴 مدير عام', className: 'bg-red-900/50 text-red-400' };
+  if (r === 'admin') return { label: '🔵 مدير', className: 'bg-blue-900/50 text-blue-400' };
+  if (r === 'management') return { label: '🟡 إدارة/اعتماد', className: 'bg-yellow-900/40 text-yellow-300' };
+  if (r === 'organizer') return { label: '🟢 منظم/بوابة', className: 'bg-green-900/40 text-green-300' };
+  if (r === 'data_entry') return { label: '🟣 إدخال بيانات', className: 'bg-purple-900/40 text-purple-300' };
+  if (r === 'moderator') return { label: '🟠 مشرف', className: 'bg-orange-900/40 text-orange-300' };
+  return { label: '⚪ مشاهدة فقط', className: 'bg-gray-900/50 text-gray-400' };
+}
+
 export default function UserManagement() {
   const router = useRouter();
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -166,18 +177,15 @@ export default function UserManagement() {
                       <td className="p-4 text-white text-right">{user.email}</td>
                       <td className="p-4 text-gray-300 text-right">{user.full_name}</td>
                       <td className="p-4 text-right">
-                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                          user.role === 'super_admin' 
-                            ? 'bg-red-900/50 text-red-400' 
-                            : user.role === 'admin'
-                            ? 'bg-blue-900/50 text-blue-400'
-                            : 'bg-gray-900/50 text-gray-400'
-                        }`}>
-                          {user.role === 'super_admin' ? '🔴 مدير عام' 
-                           : user.role === 'admin' ? '🔵 مدير'
-                           : '⚪ مستخدم'}
-                        </span>
-                      </td>                      <td className="p-4 text-right">
+                        {(() => {
+                          const badge = getRoleBadge(user.role);
+                          return (
+                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${badge.className}`}>
+                              {badge.label}
+                            </span>
+                          );
+                        })()}
+                      </td>{/* keep <tr> children element-only */}<td className="p-4 text-right">
                         <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
                           user.is_active 
                             ? 'bg-green-900/50 text-green-400' 

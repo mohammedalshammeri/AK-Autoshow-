@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AdminService } from '@/lib/SimpleAdminServicePg';
 
+const ALLOWED_ROLES = new Set([
+  'super_admin',
+  'admin',
+  'management',
+  'organizer',
+  'data_entry',
+  'moderator',
+  'viewer'
+]);
+
 // GET - Get all admin users
 export async function GET(request: NextRequest) {
   try {
@@ -58,6 +68,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
+    if (!ALLOWED_ROLES.has(String(role))) {
+      return NextResponse.json(
+        { success: false, error: `Invalid role: ${role}` },
+        { status: 400 }
+      );
+    }
+
     const adminService = new AdminService();
     
     // Get current user for audit log
@@ -92,6 +109,13 @@ export async function PUT(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json({ success: false, error: "User ID is required" }, { status: 400 });
+    }
+
+    if (role && !ALLOWED_ROLES.has(String(role))) {
+      return NextResponse.json(
+        { success: false, error: `Invalid role: ${role}` },
+        { status: 400 }
+      );
     }
 
     const adminService = new AdminService();

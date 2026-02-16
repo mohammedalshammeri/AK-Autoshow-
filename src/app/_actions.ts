@@ -1,10 +1,13 @@
 'use server';
 
+import bcrypt from 'bcryptjs';
 import { Resend } from 'resend';
 import CleanApprovalEmail from '@/emails/CleanApprovalEmail';
 import RejectionEmail from '@/emails/RejectionEmail';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { query } from '@/lib/db';
+import { sendApprovalNotification } from '@/lib/notification-service';
+import { generateRegistrationNumber, generateStandardRegistrationNumber } from '@/lib/qr-generator';
 
 const resend = process.env.RESEND_API_KEY 
   ? new Resend(process.env.RESEND_API_KEY)
@@ -268,7 +271,7 @@ export async function sendRejectionEmail(payload: SendRejectionEmailPayload) {
   try {
     console.log('🚀 بدء إرسال إيميل الرفض...');
     const { data, error } = await resend.emails.send({
-      from: 'AK Auto Show <noreply@akautoshow.com>',
+      from: 'AKAutoshow <noreply@akautoshow.com>',
       to: [payload.participantEmail],
       subject: `Regarding your application for ${payload.eventName}`,
       react: RejectionEmail({
@@ -291,3 +294,271 @@ export async function sendRejectionEmail(payload: SendRejectionEmailPayload) {
     return { success: false, error: errorMessage };
   }
 }
+
+export async function registerDynamicEventAction(formData: FormData): Promise<RegistrationResult> {
+  console.log('🚀 بدء عملية التسجيل الديناميكي (Dynamic Event Registration)...');
+  
+  try {
+    // 1. Basic Info
+    const eventId = formData.get('eventId') as string;
+    const fullName = formData.get('fullName') as string;
+    const email = formData.get('email') as string;
+    const countryCode = formData.get('countryCode') as string;
+    const phoneNumber = formData.get('phoneNumber') as string;
+
+    // Terms & Conditions (server-side enforcement)
+    const agreedRaw = formData.get('agreed');
+    const agreed = agreedRaw === 'true' || agreedRaw === 'on' || agreedRaw === '1';
+    if (!agreed) {
+      return {
+        success: false,
+        message: 'You must accept the Terms & Conditions before submitting.',
+        error: 'TERMS_NOT_ACCEPTED'
+      };
+    }
+    
+    // 2. Car Info
+    const carMake = formData.get('carMake') as string;
+    const carModel = formData.get('carModel') as string;
+    const carYear = formData.get('carYear') as string;
+    
+    // 3. Extended Info (Optional depending on event settings)
+    const driverCpr = formData.get('driverCpr') as string;
+    const carCategory = formData.get('carCategory') as string; // 'hedarz', 'turbo', '4x4'
+    const emergencyName = formData.get('emergencyName') as string;
+    const emergencyNumber = formData.get('emergencyNumber') as string;
+    
+    // Safety Checklist
+    const safetyChecklistRaw = formData.get('safetyChecklist') as string;
+    let safetyChecklist = [];
+    if (safetyChecklistRaw) {
+      try {
+        safetyChecklist = JSON.parse(safetyChecklistRaw);
+      } catch (e) {
+        console.error('Failed to parse safety checklist', e);
+      }
+    }
+    
+    // 4. Passenger Info
+    const hasPassengerRaw = formData.get('hasPassenger');
+    const hasPassenger = hasPassengerRaw === 'true' || hasPassengerRaw === 'on';
+    const passengerName = formData.get('passengerName') as string || null;
+    const passengerCpr = formData.get('passengerCpr') as string || null;
+    const passengerMobile = formData.get('passengerMobile') as string || null;
+
+    const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+
+    // Common Validation
+    if (!eventId || !fullName || !email || !phoneNumber || !carMake || !carModel) {
+      return { success: false, message: 'Missing basic required fields', error: 'Missing required fields' };
+    }
+
+    // Note: We skip strict validation here for dynamic fields because the client-side form handles visibility.
+    // However, if CPR is sent, we save it.
+
+    const registrationNumber = `EVT-${Date.now().toString().slice(-5)}`;
+    
+    // 5. File Uploads (Driver ID, Passenger ID, Car Images)
+    const carImages = formData.getAll('carImages') as File[];
+    const validCarImages = carImages.filter(file => file instanceof File && file.size > 0);
+    
+    const driverCprImage = formData.get('driverCprPhoto') as File;
+    const passengerCprImage = formData.get('passengerCprPhoto') as File;
+
+    // Hard requirements: ID photo + at least one car image
+    if (!driverCprImage || !(driverCprImage instanceof File) || driverCprImage.size <= 0) {
+      return {
+        success: false,
+        message: 'Driver ID photo is required.',
+        error: 'MISSING_DRIVER_ID_PHOTO'
+      };
+    }
+
+    if (!validCarImages || validCarImages.length === 0) {
+      return {
+        success: false,
+        message: 'Car photo is required.',
+        error: 'MISSING_CAR_PHOTO'
+      };
+    }
+
+    if (!process.env.CLOUDINARY_CLOUD_NAME) {
+      return {
+        success: false,
+        message: 'File upload is not configured. Please contact the organizer.',
+        error: 'UPLOAD_NOT_CONFIGURED'
+      };
+    }
+
+    let driverCprUrl = '';
+    let passengerCprUrl = '';
+
+    try {
+      console.log('☁️ Uploading Driver ID...');
+      const driverRes = await uploadToCloudinary(driverCprImage, 'event-docs/cpr');
+      driverCprUrl = driverRes.secure_url;
+
+      if (hasPassenger && passengerCprImage && passengerCprImage.size > 0) {
+        console.log('☁️ Uploading Passenger ID...');
+        const passengerRes = await uploadToCloudinary(passengerCprImage, 'event-docs/cpr');
+        passengerCprUrl = passengerRes.secure_url;
+      }
+    } catch (e) {
+      console.error('Upload Error:', e);
+      return {
+        success: false,
+        message: 'Failed to upload required images. Please try again.',
+        error: 'UPLOAD_FAILED'
+      };
+    }
+
+    // 6. DB Insertion
+    const insertQuery = `
+      INSERT INTO registrations (
+        event_id, full_name, email, phone_number, car_make, car_model, car_year, status, registration_number, country_code,
+        driver_cpr, driver_cpr_photo_url, car_category, has_passenger, 
+        passenger_name, passenger_cpr, passenger_mobile, passenger_cpr_photo_url,
+        emergency_contact_name, emergency_contact_number, safety_checklist, check_in_status, inspection_status
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 'pending', 'pending')
+      RETURNING id
+    `;
+    
+    // Use proper types for integer parsing
+    const yearInt = parseInt(carYear) || 2025;
+
+    const values = [
+      eventId, fullName, email, fullPhoneNumber, carMake, carModel, yearInt, registrationNumber, countryCode,
+      driverCpr, driverCprUrl, carCategory, hasPassenger,
+      passengerName, passengerCpr, passengerMobile, passengerCprUrl,
+      emergencyName, emergencyNumber, JSON.stringify(safetyChecklist)
+    ];
+
+    const result = await query(insertQuery, values);
+    const regId = result.rows[0].id;
+    console.log('✅ Registration created:', regId);
+
+    // 7. Car Images
+    let firstCarImageUrl = '';
+    for (const [index, file] of validCarImages.entries()) {
+        try {
+            const res = await uploadToCloudinary(file, 'car-images');
+            if (index === 0) firstCarImageUrl = res.secure_url;
+
+            await query(
+                `INSERT INTO car_images (registration_id, image_url, file_name) VALUES ($1, $2, $3)`,
+                [regId, res.secure_url, `dynamic_${regId}_${Date.now()}_${index}`]
+            );
+        } catch (e) { console.error('Car image upload failed', e); }
+    }
+
+    if (!firstCarImageUrl) {
+      try {
+        await query('DELETE FROM registrations WHERE id = $1', [regId]);
+      } catch (cleanupErr) {
+        console.error('Failed to cleanup registration after car image upload failure', cleanupErr);
+      }
+      return {
+        success: false,
+        message: 'Failed to upload required car photo. Please try again.',
+        error: 'CAR_PHOTO_UPLOAD_FAILED'
+      };
+    }
+
+    if (firstCarImageUrl) {
+        await query(`UPDATE registrations SET car_photo_url = $1 WHERE id = $2`, [firstCarImageUrl, regId]);
+    }
+
+    return {
+      success: true,
+      message: 'Registration successful',
+      registrationNumber
+    };
+
+  } catch (error: any) {
+    console.error('❌ Dynamic Registration Failed:', error);
+    return { success: false, message: 'Registration failed', error: error.message };
+  }
+}
+
+
+export async function approveRacerRegistration(registrationId: string) {
+  try {
+    // Get registration data with event details
+    const regResult = await query(
+      `SELECT r.*, e.name as event_name, e.event_date, e.location, e.event_type, e.id as event_id
+       FROM registrations r 
+       JOIN events e ON r.event_id = e.id 
+       WHERE r.id = $1`, 
+      [registrationId]
+    );
+    const reg = regResult.rows[0];
+    if (!reg) throw new Error('Registration not found');
+
+    // Per-event permission check (event staff roles)
+    const { requireEventCapability } = await import('@/lib/event-permissions');
+    await requireEventCapability(String(reg.event_id), 'approve');
+
+    const userCheck = await query(`SELECT id FROM users WHERE registration_id = $1`, [registrationId]);
+    if (userCheck.rows.length > 0) return { success: false, message: 'User already exists' };
+
+    // Generate credentials
+    const sanitizedName = reg.full_name.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const username = (sanitizedName + Math.floor(100 + Math.random() * 900)).toLowerCase();
+    const password = Math.random().toString(36).slice(-8); 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Generate registration number based on event type
+    const eventType = reg.event_type || 'carshow';
+    let customRegNumber: string;
+    
+    if (eventType === 'drift') {
+      customRegNumber = generateRegistrationNumber(reg.event_id);
+    } else {
+      const countResult = await query(`SELECT COUNT(*) as count FROM registrations WHERE event_id = $1 AND status = 'approved'`, [reg.event_id]);
+      const count = parseInt(countResult.rows[0].count) + 1;
+      customRegNumber = generateStandardRegistrationNumber(reg.event_id, count);
+    }
+
+    // Create user account
+    await query(
+      `INSERT INTO users (username, password_hash, role, registration_id) VALUES ($1, $2, 'racer', $3)`,
+      [username, hashedPassword, registrationId]
+    );
+
+    // Update registration with custom number
+    await query(
+      `UPDATE registrations SET status = 'approved', registration_number = $1 WHERE id = $2`, 
+      [customRegNumber, registrationId]
+    );
+
+    // Send notifications based on event type
+    const phoneWithCode = `${reg.country_code || '+973'}${reg.phone_number}`;
+    const carDetails = `${reg.car_make} ${reg.car_model} ${reg.car_year || ''}`.trim();
+    const eventUrl = `https://akautoshow.com/ar/events/${reg.event_id}`;
+    
+    await sendApprovalNotification(
+      eventType === 'drift' ? 'drift' : 'carshow',
+      {
+        email: reg.email,
+        phone: phoneWithCode,
+        fullName: reg.full_name,
+        registrationNumber: customRegNumber,
+        username,
+        password,
+        eventName: reg.event_name,
+        eventDate: new Date(reg.event_date).toLocaleDateString('ar-BH'),
+        location: reg.location,
+        carDetails,
+        eventUrl
+      }
+    );
+
+    return { success: true, username, password, registrationNumber: customRegNumber };
+
+  } catch (e: any) {
+    console.error(e);
+    return { success: false, error: e.message };
+  }
+}
+

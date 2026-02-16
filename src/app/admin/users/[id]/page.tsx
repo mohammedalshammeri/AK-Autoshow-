@@ -15,7 +15,7 @@ export default function EditUserPage() {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
-    role: 'admin',
+    role: 'viewer',
     password: '', // Optional for edit
   });
 
@@ -180,10 +180,13 @@ export default function EditUserPage() {
                 onChange={handleChange}
                 className="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
               >
-                <option value="admin">مدير (Admin)</option>
-                <option value="super_admin">مدير عام (Super Admin)</option>
-                <option value="viewer">مشاهد فقط (Viewer)</option>
-                <option value="editor">محرر (Editor)</option>
+                <option value="viewer">⚪ مشاهدة فقط (Viewer)</option>
+                <option value="organizer">🟢 منظم/بوابة (Organizer)</option>
+                <option value="management">🟡 إدارة/اعتماد (Management)</option>
+                <option value="data_entry">🟣 إدخال بيانات الجولات (Data Entry)</option>
+                <option value="moderator">🟠 مشرف (Moderator)</option>
+                <option value="admin">🔵 مدير (Admin)</option>
+                <option value="super_admin">🔴 مدير عام (Super Admin)</option>
               </select>
             </div>
 

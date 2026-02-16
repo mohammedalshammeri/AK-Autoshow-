@@ -12,7 +12,7 @@ export default function AddUserPage() {
     full_name: '',
     email: '',
     password: '',
-    role: 'admin', // default role
+    role: 'viewer', // default role
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -141,15 +141,24 @@ export default function AddUserPage() {
                 onChange={handleChange}
                 className="w-full bg-gray-900/50 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
               >
-                <option value="admin">مدير (Admin)</option>
-                <option value="super_admin">مدير عام (Super Admin)</option>
-                <option value="viewer">مشاهد فقط (Viewer)</option>
-                <option value="editor">محرر (Editor)</option>
+                <option value="viewer">⚪ مشاهدة فقط (Viewer)</option>
+                <option value="organizer">🟢 منظم/بوابة (Organizer)</option>
+                <option value="management">🟡 إدارة/اعتماد (Management)</option>
+                <option value="data_entry">🟣 إدخال بيانات الجولات (Data Entry)</option>
+                <option value="moderator">🟠 مشرف (Moderator)</option>
+                <option value="admin">🔵 مدير (Admin)</option>
+                <option value="super_admin">🔴 مدير عام (Super Admin)</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">
                 * <strong>مدير عام:</strong> كامل الصلاحيات بما فيها حذف المدراء.
                 <br/>
                 * <strong>مدير:</strong> كامل الصلاحيات ما عدا إدارة المدراء الآخرين.
+                <br/>
+                * <strong>إدارة/اعتماد:</strong> قبول/رفض المشاركين.
+                <br/>
+                * <strong>منظم/بوابة:</strong> Check-in وفحص السلامة.
+                <br/>
+                * <strong>إدخال بيانات:</strong> إدخال/تحديث نتائج الجولات.
               </p>
             </div>
 

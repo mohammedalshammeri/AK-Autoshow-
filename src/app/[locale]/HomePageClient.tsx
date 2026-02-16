@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Script from 'next/script';
 import { ScrollReveal } from '@/components/ScrollReveal';
@@ -99,44 +99,10 @@ export default function HomePageClient({ events }: { events: any[] }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentLocale, setCurrentLocale] = useState('en');
   const [sponsors, setSponsors] = useState<any[]>([]);
+  const [heroLogoOk, setHeroLogoOk] = useState(true);
+  const heroVideoRef = useRef<HTMLVideoElement | null>(null);
   
-  // Animation States
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    // Force creation and setup
-    const audio = new Audio('/godzilla_roar.mp3');
-    audioRef.current = audio;
-    audio.volume = 0.5;
-    audio.loop = true;
-    audio.autoplay = true; 
-
-    // Force Play Function
-    const forcePlay = () => {
-      audio.play().then(() => {
-           console.log("🔊 Audio started");
-      }).catch((e) => {
-        // Autoplay failed, but we still want visual if possible
-        console.log("🔇 Audio autoplay blocked");
-      });
-    };
-    
-    // Start immediately
-    forcePlay();
-
-    // Persistent check every 2 seconds to force start if stopped
-    const intervalId = setInterval(() => {
-      if (audio.paused) {
-        forcePlay();
-      }
-    }, 2000);
-
-    return () => {
-      clearInterval(intervalId);
-      audio.pause();
-      audioRef.current = null;
-    };
-  }, []);
+  const heroVideoSrc = '/تحسين_الفيديو_وتقديمه.mp4';
   
   useEffect(() => {
     // Force detection from URL
@@ -178,6 +144,67 @@ export default function HomePageClient({ events }: { events: any[] }) {
 
     loadSponsors();
   }, []);
+
+  useEffect(() => {
+    const video = heroVideoRef.current;
+    if (!video) return;
+
+    let cleanedUp = false;
+
+    const tryPlayWithSound = async () => {
+      try {
+        video.muted = false;
+        video.volume = 1;
+        await video.play();
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    const tryPlayMuted = async () => {
+      try {
+        video.muted = true;
+        await video.play();
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    const enableSoundOnFirstGesture = () => {
+      if (cleanedUp) return;
+      const v = heroVideoRef.current;
+      if (!v) return;
+      v.muted = false;
+      v.volume = 1;
+      v.play().catch(() => {
+        // ignore
+      });
+      window.removeEventListener('pointerdown', enableSoundOnFirstGesture);
+      window.removeEventListener('touchstart', enableSoundOnFirstGesture);
+      window.removeEventListener('keydown', enableSoundOnFirstGesture);
+    };
+
+    (async () => {
+      const playedWithSound = await tryPlayWithSound();
+      if (playedWithSound) return;
+
+      const playedMuted = await tryPlayMuted();
+      if (playedMuted) {
+        window.addEventListener('pointerdown', enableSoundOnFirstGesture, { once: true });
+        window.addEventListener('touchstart', enableSoundOnFirstGesture, { once: true });
+        window.addEventListener('keydown', enableSoundOnFirstGesture, { once: true });
+      }
+    })();
+
+    return () => {
+      cleanedUp = true;
+      window.removeEventListener('pointerdown', enableSoundOnFirstGesture);
+      window.removeEventListener('touchstart', enableSoundOnFirstGesture);
+      window.removeEventListener('keydown', enableSoundOnFirstGesture);
+    };
+  }, []);
   
   // Use the state locale instead of useLocale
   const activeLocale = currentLocale;
@@ -193,9 +220,9 @@ export default function HomePageClient({ events }: { events: any[] }) {
         register: 'التسجيل'
       },
       hero: {
-        title: 'معرض جودزيلا للسيارات',
-        patronage: 'برعاية: الشيخ أحمد بن عيسى آل خليفة',
-        description: 'ندعوكم للمشاركة في أضخم فعالية للسيارات المعدلة التي ستقام بجرافيتي فيليج. 13-2-2026 (الجمعة)',
+        title: 'فعالية الدرفت',
+        patronage: '',
+        description: 'سجل الآن للمشاركة في فعالية الدرفت.',
         registerNow: 'سجل الآن',
         learnMore: 'اعرف المزيد'
       },
@@ -246,7 +273,12 @@ export default function HomePageClient({ events }: { events: any[] }) {
         bahrainHummerDesc: 'فريق هامر البحرين الرسمي'
       },
       footer: {
-        rights: 'جميع الحقوق محفوظة'
+        rights: 'جميع الحقوق محفوظة',
+        developedBy: 'تطوير',
+        companyName: 'شركة حلول الأعمال للتسويق',
+        website: 'الموقع',
+        instagram: 'إنستغرام',
+        whatsapp: 'واتساب'
       }
     },
     en: {
@@ -257,9 +289,9 @@ export default function HomePageClient({ events }: { events: any[] }) {
         register: 'Register'
       },
       hero: {
-        title: 'GODZILLA CAR SHOW',
-        patronage: 'Under the patronage of Sheikh Ahmed bin Isa Al Khalifa',
-        description: 'We invite you to participate in the largest modified car event at Gravity Village. Friday, Feb 13, 2026 | 2PM - 8PM',
+        title: 'DRIFT EVENT',
+        patronage: '',
+        description: 'Register now to participate in the drift event.',
         registerNow: 'Register Now',
         learnMore: 'Learn More'
       },
@@ -310,44 +342,55 @@ export default function HomePageClient({ events }: { events: any[] }) {
         bahrainHummerDesc: 'Official Bahrain Hummer Team'
       },
       footer: {
-        rights: 'All rights reserved'
+        rights: 'All rights reserved',
+        developedBy: 'Developed by',
+        companyName: 'Business Solutions Marketing Co. (BSMC)',
+        website: 'Website',
+        instagram: 'Instagram',
+        whatsapp: 'WhatsApp'
       }
     }
   };
 
   const t = translations[activeLocale as keyof typeof translations] || translations.en;
 
-  // Debug: Let's see what's happening
-  console.log('🔍 Debug Info:');
-  console.log('Current locale from URL detection:', currentLocale);
-  console.log('Active locale from state:', activeLocale);
-  console.log('Hero title should be:', t.hero.title);
+  const eventsWithoutDrift = Array.isArray(events)
+    ? events.filter((e: any) => {
+        const id = String(e?.id || '');
+        const name = String(e?.name || e?.name_en || e?.name_ar || '').toLowerCase();
+        return id !== '5' && id !== '2' && !name.includes('godzilla');
+      })
+    : [];
 
-  const getEventDisplayData = (event: any) => {
-    const isGodzilla = event.name.toLowerCase().includes('godzilla') || event.id === 2;
-    
-    if (isGodzilla) {
-      // Force correct date: Feb 13, 2026, 2:00 PM
-      const correctDate = new Date('2026-02-13T14:00:00');
-      
-      const baseOverride = {
-        ...event,
-        event_date: correctDate.toISOString(),
-        isPremium: true // Flag for premium styling
-      };
+  const rawDriftEvent = Array.isArray(events)
+    ? events.find((e: any) => String(e?.id) === '5')
+    : null;
 
-      if (activeLocale === 'ar') {
-        return {
-          ...baseOverride,
-          name: 'معرض جودزيلا للسيارات',
-          description: 'ندعوكم للمشاركة في أضخم فعالية للسيارات المعدلة التي ستقام بجرافيتي فيليج. برعاية: الشيخ أحمد بن عيسى آل خليفة.',
-          location: 'قرية جرافيتي'
-        };
-      }
-      return baseOverride;
-    }
-    return event;
+  const driftEvent = {
+    ...(rawDriftEvent || {}),
+    id: rawDriftEvent?.id ?? 5,
+    name:
+      (activeLocale === 'ar'
+        ? rawDriftEvent?.name_ar || rawDriftEvent?.name
+        : rawDriftEvent?.name_en || rawDriftEvent?.name) ||
+      (activeLocale === 'ar' ? 'فعالية الدرفت' : 'Drift Event'),
+    description:
+      (activeLocale === 'ar'
+        ? rawDriftEvent?.description_ar || rawDriftEvent?.description
+        : rawDriftEvent?.description_en || rawDriftEvent?.description) ||
+      (activeLocale === 'ar'
+        ? 'سجل الآن للمشاركة في فعالية الدرفت.'
+        : 'Register now to participate in the drift event.'),
+    event_date:
+      rawDriftEvent?.event_date ||
+      new Date('2026-02-13T14:00:00').toISOString(),
+    location:
+      rawDriftEvent?.location ||
+      (activeLocale === 'ar' ? 'قرية جرافيتي' : 'Gravity Village'),
+    isPremium: true,
   };
+
+  const getEventDisplayData = (event: any) => event;
 
   // Group sponsors by tier
   const diamondSponsors = sponsors.filter(s => s.tier === 'diamond').sort((a, b) => a.display_order - b.display_order);
@@ -453,30 +496,56 @@ export default function HomePageClient({ events }: { events: any[] }) {
         {/* Hero Section */}
         <section className="relative min-h-[70vh] flex items-center justify-center text-center bg-gradient-to-br from-purple-950 via-black to-black">
           <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 via-black/50 to-black/80"></div>          <div className="relative z-10 container mx-auto px-6 py-20">
-            {/* Godzilla Logo Only (No Animation/Video) */}
-            <div className="flex justify-center mb-8 relative group h-40 md:h-56 lg:h-72 items-center w-full max-w-2xl mx-auto z-10 my-8">
-                <div className="w-full h-full flex justify-center items-center animate-fade-in-up">
-                    <img 
-                        src="/godzilla-logo.png" 
-                        alt="Godzilla Car Show" 
-                        className="h-full w-auto object-contain drop-shadow-[0_0_25px_rgba(168,85,247,0.6)] animate-godzilla-breathe"
-                    />
+            {/* Hero Video */}
+            {heroLogoOk && (
+              <div className="flex justify-center mb-8 relative w-full max-w-2xl mx-auto z-10">
+                <div className="animate-fade-in-up rounded-3xl overflow-hidden border border-white/10 bg-white/95 p-2 md:p-3">
+                  <video
+                    ref={heroVideoRef}
+                    src={heroVideoSrc}
+                    className="max-h-40 md:max-h-56 lg:max-h-64 w-auto object-contain"
+                    autoPlay
+                    loop
+                    playsInline
+                    preload="auto"
+                    onError={() => setHeroLogoOk(false)}
+                  />
                 </div>
-            </div>
+              </div>
+            )}
             <h1 id="hero-title" className="text-4xl md:text-6xl lg:text-7xl font-heading font-extrabold text-text-primary leading-tight mb-6">
               {t.hero.title}
             </h1>
+
+            <div className="flex flex-col items-center gap-2 mb-6">
+              <div className="text-gray-300 text-sm md:text-base">
+                🔥 <span className="font-semibold">Powered by driftandfreestyle</span>
+              </div>
+              <div className="text-gray-400 text-xs md:text-sm">
+                {t.footer.developedBy}{' '}
+                <a
+                  href="https://www.bsmc.bh"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-200 hover:text-white underline underline-offset-4"
+                >
+                  {t.footer.companyName}
+                </a>
+              </div>
+            </div>
             
             <div className="flex flex-col items-center gap-6 mb-10 max-w-4xl mx-auto animate-fade-in-up md:mt-8">
-              <h2 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-wide leading-relaxed text-[#deb887] drop-shadow-md border-b-2 border-[#deb887]/30 pb-4 px-8 inline-block">
-                {t.hero.patronage}
-              </h2>
+              {!!t.hero.patronage && (
+                <h2 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-wide leading-relaxed text-[#deb887] drop-shadow-md border-b-2 border-[#deb887]/30 pb-4 px-8 inline-block">
+                  {t.hero.patronage}
+                </h2>
+              )}
               <p className="text-lg md:text-xl lg:text-2xl text-gray-200 leading-relaxed font-light">
                 {t.hero.description}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">              <Link 
-                href={`/${activeLocale}/register`}
+                href={`/${activeLocale}/e/5`}
                 className="bg-gradient-to-r from-purple-600 via-violet-600 to-purple-800 hover:opacity-90 text-white font-bold py-4 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl w-full sm:w-auto"
               >
                 {t.hero.registerNow}
@@ -633,7 +702,68 @@ export default function HomePageClient({ events }: { events: any[] }) {
             </h2>
             
             <div className="max-w-6xl mx-auto space-y-8">
-              {events && events.length > 0 ? (                events.map((rawEvent) => {
+              {/* Drift Event (Always show on homepage) */}
+              <div className="relative overflow-hidden p-1 rounded-2xl">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#deb887] via-[#fbfbfb] to-[#deb887] rounded-2xl opacity-50"></div>
+                <div className="absolute inset-[2px] bg-black rounded-2xl z-0"></div>
+
+                <div className="relative z-10 p-8 md:p-12 text-center">
+                  <div className="inline-block mb-6">
+                    <span className="bg-gradient-to-r from-[#deb887] to-yellow-600 text-black text-xs font-bold px-4 py-1 rounded-full uppercase tracking-widest">
+                      {activeLocale === 'ar' ? 'فعالية الدرفت' : 'DRIFT EVENT'}
+                    </span>
+                  </div>
+
+                  <h3 className="text-3xl md:text-5xl font-heading font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#deb887] via-white to-[#deb887] mb-8 drop-shadow-lg">
+                    {driftEvent.name}
+                  </h3>
+
+                  <CountdownTimer targetDate={new Date(driftEvent.event_date)} labels={t.time} />
+
+                  <div className="grid md:grid-cols-3 gap-6 my-10 max-w-4xl mx-auto border-t border-b border-[#deb887]/20 py-8">
+                    <div className="flex flex-col items-center">
+                      <span className="text-[#deb887] mb-2 text-sm uppercase tracking-wider">{activeLocale === 'ar' ? 'التاريخ' : 'DATE'}</span>
+                      <span className="text-white text-xl font-bold">
+                        {new Date(driftEvent.event_date).toLocaleDateString(activeLocale === 'ar' ? 'ar-BH' : 'en-US', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center border-l-0 border-r-0 md:border-l md:border-r border-[#deb887]/20 py-4 md:py-0">
+                      <span className="text-[#deb887] mb-2 text-sm uppercase tracking-wider">{activeLocale === 'ar' ? 'الوقت' : 'TIME'}</span>
+                      <span className="text-white text-xl font-bold">
+                        {new Date(driftEvent.event_date).toLocaleTimeString(activeLocale === 'ar' ? 'ar-BH' : 'en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-[#deb887] mb-2 text-sm uppercase tracking-wider">{activeLocale === 'ar' ? 'المكان' : 'LOCATION'}</span>
+                      <span className="text-white text-xl font-bold">
+                        {driftEvent.location || (activeLocale === 'ar' ? 'سيتم تحديده' : 'TBD')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-gray-300 text-lg md:text-xl leading-relaxed max-w-3xl mx-auto mb-10 font-light">
+                    {driftEvent.description}
+                  </p>
+
+                  <div className="flex justify-center">
+                    <Link
+                      href={`/${activeLocale}/e/5`}
+                      className="bg-gradient-to-r from-purple-600 via-violet-600 to-purple-800 hover:opacity-90 text-white font-bold py-4 px-10 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl"
+                    >
+                      {activeLocale === 'ar' ? 'التسجيل' : 'Register'}
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              {eventsWithoutDrift.length > 0 ? (                eventsWithoutDrift.map((rawEvent) => {
                   const event = getEventDisplayData(rawEvent);
 
                   if (event?.isPremium) {
@@ -889,10 +1019,10 @@ export default function HomePageClient({ events }: { events: any[] }) {
                         <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                         </svg>
-                      </div>                      <h3 className="text-xl font-bold text-white mb-2">@bsmc.bh</h3>
+                      </div>                      <h3 className="text-xl font-bold text-white mb-2">@bsmc.mena</h3>
                       <p className="text-gray-300 text-sm mb-4 leading-relaxed">{t.instagram.bsmcDesc}</p>
                       <a 
-                        href="https://instagram.com/bsmc.bh" 
+                        href="https://instagram.com/bsmc.mena" 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-full font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 hover:shadow-lg hover:scale-105"
@@ -957,6 +1087,54 @@ export default function HomePageClient({ events }: { events: any[] }) {
           </div><p className="text-text-secondary">
             © {new Date().getFullYear()} BSMC.BH. {t.footer.rights}.
           </p>
+
+          <div className="mt-6 max-w-2xl mx-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur px-4 py-4 md:px-6 md:py-5">
+            <div className="flex flex-col items-center justify-center text-center gap-3">
+              <a
+                href="https://www.bsmc.bh"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:opacity-90 transition"
+              >
+                <img
+                  src="/BSMC.BH1.jpg"
+                  alt="BSMC"
+                  className="h-12 md:h-14 w-auto object-contain rounded"
+                />
+              </a>
+
+              <div className="text-gray-200 font-semibold">
+                {t.footer.developedBy}: {t.footer.companyName}
+              </div>
+
+              <div className="flex items-center justify-center gap-6 flex-wrap text-sm">
+                <a
+                  href="https://instagram.com/bsmc.mena"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-300 hover:text-white underline underline-offset-4"
+                >
+                  {t.footer.instagram}
+                </a>
+                <a
+                  href="https://www.bsmc.bh"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-300 hover:text-white underline underline-offset-4"
+                >
+                  {t.footer.website}
+                </a>
+                <a
+                  href="https://wa.me/97338409977"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-300 hover:text-white underline underline-offset-4"
+                >
+                  {t.footer.whatsapp}
+                </a>
+              </div>
+            </div>
+          </div>
         </div>      </footer>
 
       {/* Live Chat Widget */}

@@ -107,9 +107,9 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleUserManagement = () => window.location.href = '/ar/admin';
-  const handleCarManagement = () => window.location.href = '/ar/admin';
-  const handleEventManagement = () => window.location.href = '/ar/admin';
+  const handleUserManagement = () => router.push('/admin/users');
+  const handleCarManagement = () => router.push('/admin/cars');
+  const handleEventManagement = () => router.push('/admin/events');
 
   if (loading) {
     return (
