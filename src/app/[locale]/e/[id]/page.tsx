@@ -307,16 +307,38 @@ Any car will be rejected if it is not ready in the inspection/registration area.
 
   // Fetch Logic
   useEffect(() => {
-    fetch(`/api/events/${id}`).then(res => {
+    setIsLoading(true);
+    setErrorMsg(null);
+
+    fetch(`/api/events/${id}`)
+      .then(async (res) => {
         if (res.ok) return res.json();
-        throw new Error('Event not found');
-    }).then(data => {
+
+        if (res.status === 404) {
+          throw new Error('EVENT_NOT_FOUND');
+        }
+
+        const bodyText = await res.text().catch(() => '');
+        throw new Error(`EVENT_LOAD_FAILED:${res.status}:${bodyText.slice(0, 200)}`);
+      })
+      .then((data) => {
         setEventData(data);
         setIsLoading(false);
-    }).catch(err => {
+      })
+      .catch((err) => {
         console.error(err);
+        setEventData(null);
         setIsLoading(false);
-    });
+
+        const message = String(err?.message || '');
+        if (message === 'EVENT_NOT_FOUND') {
+          setErrorMsg(currentLocale === 'ar' ? 'الفعالية غير موجودة.' : 'Event not found.');
+        } else {
+          setErrorMsg(currentLocale === 'ar'
+            ? 'تعذر تحميل بيانات الفعالية. يرجى المحاولة مرة أخرى.'
+            : 'Failed to load event details. Please try again.');
+        }
+      });
   }, [id]);
 
   const settings = eventData?.settings || {};
@@ -413,7 +435,7 @@ Any car will be rejected if it is not ready in the inspection/registration area.
   };
 
   if (isLoading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
-  if (!eventData) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Event not found</div>;
+  if (!eventData) return <div className="min-h-screen bg-black text-white flex items-center justify-center">{errorMsg || 'Event not found'}</div>;
 
   const isDriftEvent = eventData.event_type === 'drift';
 

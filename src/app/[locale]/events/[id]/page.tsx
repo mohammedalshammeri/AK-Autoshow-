@@ -31,12 +31,21 @@ export default function EventLandingPage({ params }: { params: Promise<{ id: str
 
   useEffect(() => {
     fetch(`/api/events/${id}`)
-      .then(res => res.json())
-      .then(data => {
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Failed to load event (${res.status})`);
+        }
+        return res.json();
+      })
+      .then((data) => {
         setEvent(data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        console.error(err);
+        setEvent(null);
+        setLoading(false);
+      });
   }, [id]);
 
   const t = (key: string) => {
