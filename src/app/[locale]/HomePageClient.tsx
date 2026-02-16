@@ -103,7 +103,7 @@ export default function HomePageClient({ events }: { events: any[] }) {
   const heroVideoRef = useRef<HTMLVideoElement | null>(null);
   
   const heroVideoSrc = '/home-hero.mp4';
-  const primaryEventId = String(events?.[0]?.id ?? '5');
+  const primaryEventId = '5';
   
   useEffect(() => {
     // Force detection from URL
