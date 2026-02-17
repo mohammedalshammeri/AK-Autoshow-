@@ -426,7 +426,7 @@ Any car will be rejected if it is not ready in the inspection/registration area.
       const carImage = watch('carImages');
       // Added safety check for File instance
       if (!carImage || (carImage instanceof File && carImage.size <= 0)) {
-        setErrorMsg(safeT('carPhoto') + ' ' + (currentLocale === 'ar' ? 'مطلوبة.' : 'is required.'));
+        setErrorMsg(t('carPhoto') + ' ' + (currentLocale === 'ar' ? 'مطلوبة.' : 'is required.'));
         return;
       }
     }
@@ -552,8 +552,7 @@ Any car will be rejected if it is not ready in the inspection/registration area.
                  </div>
               </div>
            </div>
-        ) : (        </header>
-
+        ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="bg-gray-900/50 p-6 md:p-10 rounded-3xl border border-gray-800 shadow-2xl">
            
            {/* STEP 1: Personal Info */}
@@ -785,22 +784,20 @@ Any car will be rejected if it is not ready in the inspection/registration area.
                        <Controller
                          name="agreed"
                          control={control}
-                         defaultValue={false}
                          render={({ field: { onChange, value } }) => (
                            <input 
                              type="checkbox" 
                              disabled={!hasScrolledTerms}
-                             checked={value}
+                             checked={value === true}
                              onChange={(e) => {
                                // Update react-hook-form state
-                               onChange(e.target.checked);
+                               onChange(e.target.checked ? true : false);
                                // Update local state for button enabling
                                setAgreedToTerms(e.target.checked);
                              }}
                              className="w-6 h-6 rounded accent-red-600 mt-1 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer" 
                            />
                          )}
-        )}
                        />
                        <span className="text-gray-300 text-sm font-bold select-none">
                          {hasScrolledTerms ? t('agree') : (currentLocale === 'ar' ? '⚠️ اقرأ الشروط كاملة أولاً' : '⚠️ Read all terms first')}
@@ -817,7 +814,11 @@ Any car will be rejected if it is not ready in the inspection/registration area.
                        <button type="button" onClick={() => setStep(2)} className="bg-gray-800 text-gray-300 px-8 py-3 rounded-xl font-bold hover:bg-gray-700 transition">
                            {t('back')}
                        </button>
-                       <button disabled={isPending || !hasScrolledTerms || !agreedToTerms} type="submit" className="bg-gradient-to-r from-red-600 to-red-800 text-white px-10 py-4 rounded-xl font-bold hover:shadow-lg hover:shadow-red-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto">
+                       <button 
+                            disabled={isPending || !hasScrolledTerms} 
+                            type="submit" 
+                            className="bg-gradient-to-r from-red-600 to-red-800 text-white px-10 py-4 rounded-xl font-bold hover:shadow-lg hover:shadow-red-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto"
+                        >
                            {isPending ? t('submitting') : t('submit')}
                        </button>
                    </div>
@@ -825,6 +826,7 @@ Any car will be rejected if it is not ready in the inspection/registration area.
            )}
 
         </form>
+      )}
       </div>
     </div>
   );

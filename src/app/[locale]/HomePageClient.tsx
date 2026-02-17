@@ -402,8 +402,9 @@ export default function HomePageClient({ events }: { events: any[] }) {
   return (
     <>
       {loading && <Preloader />}
-      <div className={`min-h-screen flex flex-col bg-background text-text-primary ${isRTL ? 'rtl' : 'ltr'}`}>      {/* Header */}
-      <header className="bg-black/90 backdrop-blur-sm sticky top-0 z-50 border-b-2 border-purple-900/30 bg-gradient-to-r from-purple-900/20 via-black to-purple-900/20">
+      <div className={`min-h-screen flex flex-col bg-background text-text-primary ${isRTL ? 'rtl' : 'ltr'}`}>
+        {/* Header */}
+        <header className="bg-black/90 backdrop-blur-sm sticky top-0 z-50 border-b-2 border-purple-900/30 bg-gradient-to-r from-purple-900/20 via-black to-purple-900/20">
         <nav className="container mx-auto px-6 py-4">
           <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>          {/* Logo */}          <Link href={`/${activeLocale}`} className="flex items-center hover:opacity-80 transition-opacity flex-shrink-0">            <img 
               src="/ak-autoshow-logo-new.png" 
@@ -764,6 +765,11 @@ export default function HomePageClient({ events }: { events: any[] }) {
                       <span className="text-[#deb887] mb-2 text-sm uppercase tracking-wider">{activeLocale === 'ar' ? 'المكان' : 'LOCATION'}</span>
                       <span className="text-white text-xl font-bold">
                         {driftEvent.location || (activeLocale === 'ar' ? 'سيتم تحديده' : 'TBD')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 flex justify-center">
                     {driftEvent.status === 'paused' ? (
                        <button
                          disabled
@@ -778,16 +784,7 @@ export default function HomePageClient({ events }: { events: any[] }) {
                     >
                       {activeLocale === 'ar' ? 'التسجيل' : 'Register'}
                     </Link>
-                    )}vent.description}
-                  </p>
-
-                  <div className="flex justify-center">
-                    <Link
-                      href={`/${activeLocale}/e/${String(driftEvent.id)}`}
-                      className="bg-gradient-to-r from-purple-600 via-violet-600 to-purple-800 hover:opacity-90 text-white font-bold py-4 px-10 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl"
-                    >
-                      {activeLocale === 'ar' ? 'التسجيل' : 'Register'}
-                    </Link>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1168,7 +1165,7 @@ export default function HomePageClient({ events }: { events: any[] }) {
 
       {/* Live Chat Widget */}
       <ChatwayWidget />
-    </div>
+      </div>
     </>
   );
 }
