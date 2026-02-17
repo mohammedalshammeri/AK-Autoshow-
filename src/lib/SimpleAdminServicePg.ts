@@ -114,7 +114,7 @@ export class AdminService {
       // Fetch session and join with admin_users
       const res = await query(
         `SELECT s.*, 
-                u.id as user_id, u.email, u.full_name, u.role, u.permissions, u.is_active as user_is_active
+                u.id as user_id, u.email, u.full_name, u.role, u.permissions, u.assigned_event_id, u.is_active as user_is_active
          FROM admin_sessions s
          JOIN admin_users u ON s.user_id = u.id
          WHERE s.session_token = $1 AND s.is_active = true AND s.expires_at > NOW()`,
@@ -134,6 +134,7 @@ export class AdminService {
         full_name: sessionData.full_name,
         role: sessionData.role,
         permissions: sessionData.permissions,
+        assigned_event_id: sessionData.assigned_event_id,
         is_active: sessionData.user_is_active
       };
 

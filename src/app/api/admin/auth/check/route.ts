@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
           full_name: user.full_name,
           role: user.role,
           permissions: user.permissions,
+          assigned_event_id: user.assigned_event_id,
         }
       },
       { 

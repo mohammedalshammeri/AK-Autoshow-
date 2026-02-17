@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
         full_name: result.user?.full_name,
         role: result.user?.role,
         permissions: result.user?.permissions,
+        assigned_event_id: result.user?.assigned_event_id,
       },
       token: result.session?.token,
       expires_at: result.session?.expires_at

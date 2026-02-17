@@ -53,6 +53,12 @@ export default function AdminDashboard() {
         const data = await response.json();
         
         if (data.authenticated && data.user) {
+          // Redirect organizer if they land here
+          if (data.user.role === 'organizer' && data.user.assigned_event_id) {
+             window.location.replace(`/admin/events/${data.user.assigned_event_id}`);
+             return;
+          }
+
           setUser(data.user);
           setLoading(false);
           setAuthCheckDone(true);

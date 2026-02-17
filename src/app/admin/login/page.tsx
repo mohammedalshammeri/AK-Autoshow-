@@ -42,7 +42,13 @@ export default function AdminLoginPage() {
             const data = await response.json();
             if (data.authenticated && data.user) {
               console.log('🔐 Login: Already logged in, redirecting');
-              window.location.replace('/admin/dashboard');
+              
+              // Intelligent Redirect based on Role
+              if (data.user.role === 'organizer' && data.user.assigned_event_id) {
+                 window.location.replace(`/admin/events/${data.user.assigned_event_id}`);
+              } else {
+                 window.location.replace('/admin/dashboard');
+              }
               return;
             }
           } catch (e) {
@@ -102,8 +108,14 @@ export default function AdminLoginPage() {
 
       if (response.ok && result.success) {
         console.log('✅ Login: Success, redirecting');
-        // Force redirect to break any potential loops
-        window.location.replace('/ar/admin');
+        
+        // Intelligent Redirect based on Role
+        if (result.user?.role === 'organizer' && result.user?.assigned_event_id) {
+            window.location.replace(`/admin/events/${result.user.assigned_event_id}`);
+        } else {
+            // Default admin redirect
+            window.location.replace('/admin/dashboard');
+        }
       } else {
         setError(result.error || 'Login failed. Please check your credentials.');
         console.error('❌ Login failed:', result.error);
