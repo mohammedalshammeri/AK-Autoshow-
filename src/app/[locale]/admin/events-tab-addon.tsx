@@ -15,7 +15,7 @@ export interface Event {
   description_ar?: string;
   description_en?: string;
   website_url?: string;
-  status?: 'upcoming' | 'current' | 'ended';
+  status?: 'upcoming' | 'current' | 'ended' | 'paused';
   features?: string[];
   registration_fee?: number;
   max_participants?: number;
@@ -51,6 +51,8 @@ export function EventsTab({
     
     if (event.status === 'current') {
       return { status: 'current', label: 'جارية الآن', color: 'bg-green-600', icon: '🔴' };
+    } else if (event.status === 'paused') {
+      return { status: 'paused', label: 'موقوفة مؤقتاً', color: 'bg-yellow-600', icon: '⏸️' };
     } else if (event.status === 'ended') {
       return { status: 'ended', label: 'انتهت', color: 'bg-gray-600', icon: '⚫' };
     } else if (eventDate > now) {
@@ -229,7 +231,7 @@ export function EventForm({
     description_ar: event?.description_ar || '',
     description_en: event?.description_en || '',
     website_url: event?.website_url || '',
-    status: event?.status || 'upcoming' as 'upcoming' | 'current' | 'ended',
+    status: event?.status || 'upcoming' as 'upcoming' | 'current' | 'ended' | 'paused',
     features: event?.features?.join('\n') || '',
     registration_fee: event?.registration_fee || 0,
     max_participants: event?.max_participants || 100,
@@ -310,11 +312,12 @@ export function EventForm({
                 <label className="block text-white font-semibold mb-2">حالة الفعالية *</label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData({...formData, status: e.target.value as 'upcoming' | 'current' | 'ended'})}
+                  onChange={(e) => setFormData({...formData, status: e.target.value as 'upcoming' | 'current' | 'ended' | 'paused'})}
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-600 text-white rounded focus:border-purple-500 focus:outline-none"
                 >
                   <option value="upcoming">قادمة</option>
                   <option value="current">جارية</option>
+                  <option value="paused">موقوفة مؤقتاً</option>
                   <option value="ended">منتهية</option>
                 </select>
               </div>

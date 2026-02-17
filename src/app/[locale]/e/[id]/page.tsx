@@ -24,6 +24,7 @@ interface EventData {
   event_date: string;
   location: string;
   event_type?: 'drift' | 'carshow' | 'exhibition';
+  status?: 'upcoming' | 'active' | 'current' | 'ended' | 'paused' | 'draft';
   settings: EventSettings;
 }
 
@@ -466,6 +467,7 @@ Any car will be rejected if it is not ready in the inspection/registration area.
   if (!eventData) return <div className="min-h-screen bg-black text-white flex items-center justify-center">{errorMsg || 'Event not found'}</div>;
 
   const isDriftEvent = eventData.event_type === 'drift';
+  const isPaused = eventData.status === 'paused';
 
   if (success) return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 text-center">
@@ -525,8 +527,32 @@ Any car will be rejected if it is not ready in the inspection/registration area.
                 <img src="/j2drift-logo.png" alt="J2drift" className="h-20 md:h-28 object-contain" onError={(e) => e.currentTarget.style.display='none'} />
               </div>
             )}
-            <h1 className="text-4xl font-black text-white mb-2">{eventData.name}</h1>
+            {isPaused && (
+              <div className="mt-4 bg-yellow-900/40 border border-yellow-600 text-yellow-200 p-4 rounded-xl max-w-2xl mx-auto shadow-lg backdrop-blur-sm">
+                <p className="font-bold text-lg mb-1">⚠️ {currentLocale === 'ar' ? 'التسجيل مغلق مؤقتاً' : 'Registration Paused'}</p>
+                <p className="text-sm opacity-90">{currentLocale === 'ar' ? 'نمر حالياً بمرحلة فرز الطلبات، سيتم إعادة فتح التسجيل قريباً.' : 'We are currently reviewing applications. Registration will reopen soon.'}</p>
+              </div>
+            )}
         </header>
+
+        {isPaused ? (
+           <div className="max-w-4xl mx-auto text-center py-12">
+              <div className="bg-gray-900/50 p-8 rounded-3xl border border-gray-800 shadow-2xl">
+                 <div className="text-6xl mb-4">⏳</div>
+                 <h2 className="text-2xl font-bold text-white mb-4">
+                   {currentLocale === 'ar' ? 'شكراً لاهتمامك!' : 'Thank you for your interest!'}
+                 </h2>
+                 <p className="text-gray-400 max-w-xl mx-auto leading-relaxed">
+                   {eventData.description || (currentLocale === 'ar' ? 'تفاصيل الفعالية ستظهر هنا...' : 'Event details will appear here...')}
+                 </p>
+                 <div className="mt-8 flex justify-center">
+                   <a href="/" className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-bold transition-colors">
+                     {currentLocale === 'ar' ? 'العودة للرئيسية' : 'Back to Home'}
+                   </a>
+                 </div>
+              </div>
+           </div>
+        ) : (        </header>
 
         <form onSubmit={handleSubmit(onSubmit)} className="bg-gray-900/50 p-6 md:p-10 rounded-3xl border border-gray-800 shadow-2xl">
            
@@ -774,6 +800,7 @@ Any car will be rejected if it is not ready in the inspection/registration area.
                              className="w-6 h-6 rounded accent-red-600 mt-1 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer" 
                            />
                          )}
+        )}
                        />
                        <span className="text-gray-300 text-sm font-bold select-none">
                          {hasScrolledTerms ? t('agree') : (currentLocale === 'ar' ? '⚠️ اقرأ الشروط كاملة أولاً' : '⚠️ Read all terms first')}

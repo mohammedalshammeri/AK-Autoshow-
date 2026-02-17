@@ -388,6 +388,7 @@ export default function HomePageClient({ events }: { events: any[] }) {
     location:
       rawDriftEvent?.location ||
       (activeLocale === 'ar' ? 'قرية جرافيتي' : 'Gravity Village'),
+    status: rawDriftEvent?.status,
     isPremium: true,
   };
 
@@ -554,12 +555,21 @@ export default function HomePageClient({ events }: { events: any[] }) {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              {driftEvent?.status === 'paused' ? (
+                <button
+                  disabled
+                  className="bg-gray-600 text-white font-bold py-4 px-8 rounded-lg text-lg w-full sm:w-auto cursor-not-allowed opacity-80"
+                >
+                  {activeLocale === 'ar' ? 'التسجيل مغلق مؤقتاً' : 'Registration Paused'}
+                </button>
+              ) : (
               <Link 
                 href={`/${activeLocale}/e/${primaryEventId}`}
                 className="bg-gradient-to-r from-purple-600 via-violet-600 to-purple-800 hover:opacity-90 text-white font-bold py-4 px-8 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl w-full sm:w-auto"
               >
                 {t.hero.registerNow}
               </Link>
+              )}
               <Link 
                 href={`/${activeLocale}/become-sponsor`} 
                 className="border-2 border-transparent bg-gradient-to-r from-purple-600 via-violet-600 to-purple-800 p-[2px] rounded-lg transition-all duration-300 hover:shadow-xl w-full sm:w-auto"
@@ -754,12 +764,21 @@ export default function HomePageClient({ events }: { events: any[] }) {
                       <span className="text-[#deb887] mb-2 text-sm uppercase tracking-wider">{activeLocale === 'ar' ? 'المكان' : 'LOCATION'}</span>
                       <span className="text-white text-xl font-bold">
                         {driftEvent.location || (activeLocale === 'ar' ? 'سيتم تحديده' : 'TBD')}
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="text-gray-300 text-lg md:text-xl leading-relaxed max-w-3xl mx-auto mb-10 font-light">
-                    {driftEvent.description}
+                    {driftEvent.status === 'paused' ? (
+                       <button
+                         disabled
+                         className="bg-gray-600 text-white font-bold py-4 px-10 rounded-lg text-lg cursor-not-allowed opacity-75"
+                       >
+                         {activeLocale === 'ar' ? 'التسجيل مغلق مؤقتاً (فرز الطلبات)' : 'Registration Paused (Reviewing)'}
+                       </button>
+                    ) : (
+                    <Link
+                      href={`/${activeLocale}/e/${String(driftEvent.id)}`}
+                      className="bg-gradient-to-r from-purple-600 via-violet-600 to-purple-800 hover:opacity-90 text-white font-bold py-4 px-10 rounded-lg text-lg transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl"
+                    >
+                      {activeLocale === 'ar' ? 'التسجيل' : 'Register'}
+                    </Link>
+                    )}vent.description}
                   </p>
 
                   <div className="flex justify-center">

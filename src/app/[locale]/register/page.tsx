@@ -12,6 +12,7 @@ import GroupRegistrationForm from './GroupRegistrationForm';
 interface Event {
   id: string;
   name: string;
+  status?: string;
 }
 
 // Generate years from current year back to 1980
@@ -548,7 +549,9 @@ export default function RegisterPage() {
                 >
                   <option value="">{loadingEvents ? 'Loading events...' : t('selectEvent')}</option>
                   {Array.isArray(events) && events.map(event => (
-                    <option key={event.id} value={event.id.toString()}>{event.name}</option>
+                    <option key={event.id} value={event.id.toString()} disabled={event.status === 'paused'}>
+                      {event.name} {event.status === 'paused' ? (activeLocale === 'ar' ? '(مغلق مؤقتاً)' : '(Paused)') : ''}
+                    </option>
                   ))}
                 </select>
                 {errors.eventId && <p className="text-red-500 text-xs mt-1">{errors.eventId.message}</p>}
