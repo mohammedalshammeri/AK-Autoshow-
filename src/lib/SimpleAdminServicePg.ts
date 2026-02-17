@@ -268,7 +268,7 @@ export class AdminService {
   /**
    * Create a new admin user
    */
-  async createUser(data: { email: string; password?: string; full_name: string; role: string; permissions?: any }, createdBy?: string) {
+  async createUser(data: { email: string; password?: string; full_name: string; role: string; assigned_event_id?: number | null; permissions?: any }, createdBy?: string) {
     try {
       // Check if user exists
       const existingUser = await query('SELECT id FROM admin_users WHERE email = $1', [data.email.toLowerCase()]);
@@ -276,21 +276,21 @@ export class AdminService {
         return { success: false, error: 'User with this email already exists' };
       }
 
-      // Hash password
-      const password = data.password || crypto.randomUUID(); // Generate random if not provided (though usually required)
-      const salt = await bcrypt.genSalt(12);
+      const password = data.password || crypto.randomUUID(); 
+      const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(password, salt);
 
       // Insert user
       const res = await query(
-        `INSERT INTO admin_users (email, password_hash, full_name, role, permissions, is_active, created_by, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-         RETURNING id, email, full_name, role, created_at`,
+        `INSERT INTO admin_users (email, password_hash, full_name, role, assigned_event_id, permissions, is_active, created_by, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+         RETURNING id, email, full_name, role, assigned_event_id, created_at`,
         [
           data.email.toLowerCase(),
           passwordHash,
           data.full_name,
           data.role,
+          data.assigned_event_id || null,
           data.permissions || {},
           true,
           createdBy || null
@@ -342,7 +342,7 @@ export class AdminService {
   /**
    * Update admin user
    */
-  async updateUser(userId: string, data: { email?: string; password?: string; full_name?: string; role?: string; permissions?: any }, requestUserId?: string) {
+  async updateUser(userId: string, data: { email?: string; password?: string; full_name?: string; role?: string; assigned_event_id?: number | null; permissions?: any }, requestUserId?: string) {
     try {
       const user = await this.getUserById(userId);
       if (!user) {
@@ -372,6 +372,11 @@ export class AdminService {
       if (data.role) {
         updates.push(`role = $${paramCount++}`);
         values.push(data.role);
+      }
+
+      if (data.assigned_event_id !== undefined) {
+        updates.push(`assigned_event_id = $${paramCount++}`);
+        values.push(data.assigned_event_id);
       }
 
       if (data.permissions) {

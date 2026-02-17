@@ -1,19 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function AddUserPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [events, setEvents] = useState<any[]>([]);
   
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
     password: '',
     role: 'viewer', // default role
+    assigned_event_id: '',
   });
+
+  useEffect(() => {
+    // Fetch events list
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch('/api/admin/events');
+        const result = await response.json();
+        if (result.success) {
+          setEvents(result.events || []);
+        }
+      } catch (e) {
+        console.error('Failed to load events');
+      }
+    };
+    fetchEvents();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -29,12 +47,19 @@ export default function AddUserPage() {
     setError('');
 
     try {
+      const payload: any = { ...formData };
+      
+      // Clear assigned event if role is not organizer
+      if (payload.role !== 'organizer') {
+        delete payload.assigned_event_id;
+      }
+
       const response = await fetch('/api/admin/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const result = await response.json();
@@ -161,6 +186,32 @@ export default function AddUserPage() {
                 * <strong>إدخال بيانات:</strong> إدخال/تحديث نتائج الجولات.
               </p>
             </div>
+
+            {/* Assigned Event - Only for Organization Role */}
+            {formData.role === 'organizer' && (
+              <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-800 animate-fadeIn">
+                <label className="block text-sm font-bold text-blue-300 mb-2">
+                  🏁 تخصيص الفعالية (إجباري للمنظمين)
+                </label>
+                <select
+                  name="assigned_event_id"
+                  value={formData.assigned_event_id}
+                  onChange={handleChange}
+                  required
+                  className="w-full bg-gray-900 border border-blue-500 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                >
+                  <option value="">-- اختر الفعالية المسؤولة عنها --</option>
+                  {events.map((event: any) => (
+                    <option key={event.id} value={event.id}>
+                      {event.name} ({new Date(event.event_date).toLocaleDateString('en-GB')})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-blue-400 mt-2">
+                  * سيتم توجيه هذا المستخدم <strong>تلقائياً</strong> لصفحة إدارة هذه الفعالية عند تسجيل الدخول.
+                </p>
+              </div>
+            )}
 
             {/* Submit Button */}
             <div className="pt-4">

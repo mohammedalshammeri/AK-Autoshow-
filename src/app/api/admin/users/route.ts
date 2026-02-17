@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, full_name, role } = body;
+    const { email, password, full_name, role, assigned_event_id } = body;
 
     if (!email || !password || !full_name || !role) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
@@ -81,14 +81,22 @@ export async function POST(request: NextRequest) {
     const sessionToken = request.cookies.get('admin_session')?.value;
     let currentUserId = undefined;
     
+    // Validate session if possible
     if (sessionToken) {
-        const auth = await adminService.validateSession(sessionToken);
-        if (auth.success && auth.user) {
-            currentUserId = auth.user.id;
-        }
+       // Assuming request already passed middleware or basic validation
+       const session = await adminService.validateSession(sessionToken);
+       if (session.success) {
+           currentUserId = session.user?.id;
+       }
     }
     
-    const result = await adminService.createUser({ email, password, full_name, role }, currentUserId);
+    const result = await adminService.createUser({ 
+      email, 
+      password, 
+      full_name, 
+      role,
+      assigned_event_id: assigned_event_id ? parseInt(assigned_event_id) : undefined 
+    }, currentUserId);
 
     if (!result.success) {
       return NextResponse.json({ success: false, error: result.error }, { status: 400 });
@@ -105,7 +113,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, email, password, full_name, role } = body;
+    const { id, email, password, full_name, role, assigned_event_id } = body;
 
     if (!id) {
       return NextResponse.json({ success: false, error: "User ID is required" }, { status: 400 });
@@ -120,18 +128,20 @@ export async function PUT(request: NextRequest) {
 
     const adminService = new AdminService();
     
-    // Get current user for audit log
+    // Validate session
     const sessionToken = request.cookies.get('admin_session')?.value;
     let currentUserId = undefined;
-    
     if (sessionToken) {
-        const auth = await adminService.validateSession(sessionToken);
-        if (auth.success && auth.user) {
-            currentUserId = auth.user.id;
-        }
+       const session = await adminService.validateSession(sessionToken);
+       if (session.success) currentUserId = session.user?.id;
     }
 
-    const result = await adminService.updateUser(id, { email, password, full_name, role }, currentUserId);
+    const updateData: any = { email, password, full_name, role };
+    if (assigned_event_id !== undefined) {
+        updateData.assigned_event_id = assigned_event_id ? parseInt(assigned_event_id) : null;
+    }
+
+    const result = await adminService.updateUser(id, updateData, currentUserId);
 
     if (!result.success) {
       return NextResponse.json({ success: false, error: result.error }, { status: 400 });
