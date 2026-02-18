@@ -29,7 +29,7 @@ function roleAllows(capability: EventCapability, role: EventRole): boolean {
     case 'approve':
       return role === 'approver';
     case 'edit_registration':
-      return role === 'data_entry';
+      return role === 'data_entry' || role === 'approver';
     case 'manage_rounds':
       return false;
     case 'manage_staff':
