@@ -244,6 +244,81 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
     }
   };
 
+
+  const handleExportExcel = () => {
+    // Use filteredData to export exactly what is shown (respecting search and status filters)
+    const dataToExport = filteredData.length > 0 ? filteredData : [];
+
+    if (dataToExport.length === 0) {
+        alert('لا يوجد بيانات للتصدير بناءً على الفلاتر الحالية');
+        return;
+    }
+
+    // CSV Header
+    const headers = [
+      'الاسم الكامل',
+      'رقم الهاتف',
+      'البريد الإلكتروني',
+      'رقم التسجيل',
+      'نوع السيارة',
+      'موديل السيارة',
+      'سنة الصنع',
+      'الحالة',
+      'اسم المستخدم',
+      'كلمة المرور (للمستخدمين الجدد فقط)',
+      'تاريخ التسجيل'
+    ];
+
+    // CSV Rows
+    const rows = dataToExport.map(r => {
+      // Clean phone
+      const phone = r.phone_number || '';
+      const code = r.country_code || '';
+      const cleanPhone = phone.replace(/^\+/, '');
+      const cleanCode = code.replace(/^\+/, '');
+      
+      let finalPhone = cleanPhone;
+      if (!cleanPhone.startsWith(cleanCode)) {
+          finalPhone = `${cleanCode}${phone.replace(/^0+/, '')}`;
+      }
+      // Ensure it starts with + for Excel to treat as string or just as is
+      finalPhone = `+${finalPhone.replace(/^\+/, '')}`;
+
+      // Translate status for CSV
+      let statusAr = 'قيد الانتظار';
+      if (r.status === 'approved') statusAr = 'مقبول';
+      if (r.status === 'rejected') statusAr = 'مرفوض';
+
+      return [
+        `"${r.full_name || ''}"`,
+        `"${finalPhone}"`,
+        `"${r.email || ''}"`,
+        `"${r.registration_number || ''}"`,
+        `"${r.car_make || ''}"`,
+        `"${r.car_model || ''}"`,
+        `"${r.car_year || ''}"`,
+        `"${statusAr}"`,
+        `"${r.username || ''}"`,
+        `"${r.plain_password || ''}"`,
+        `"${r.created_at ? new Date(r.created_at).toLocaleDateString('ar-BH') : ''}"`
+      ].join(',');
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n'); // Add BOM
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Filename includes the current filter
+    const filterName = filter === 'all' ? 'all' : filter;
+    link.setAttribute('download', `participants_${filterName}_${id}_${new Date().toISOString().slice(0,10)}.csv`);
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0f1115] flex items-center justify-center">
@@ -360,6 +435,17 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
           </div>
           
           <div className="flex items-center gap-3">
+            <button
+               onClick={handleExportExcel}
+               className="hidden sm:flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-indigo-600 shadow-md"
+               title={`تصدير البيانات (${filter === 'all' ? 'الكل' : filter === 'approved' ? 'المقبولين' : filter === 'rejected' ? 'المرفوضين' : 'قيد الانتظار'})`}
+            >
+              <Download className="w-4 h-4" />
+              {filter === 'all' ? 'تصدير الكل (Excel)' : 
+               filter === 'approved' ? 'تصدير المقبولين (Excel)' :
+               filter === 'rejected' ? 'تصدير المرفوضين (Excel)' :
+               'تصدير القائمة (Excel)'}
+            </button>
             <button 
               onClick={loadData} 
               className="hidden sm:flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-700"
@@ -492,7 +578,21 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
                                             
                                             <div className="flex flex-col gap-0.5 mt-1">
                                                 <div className="flex items-center gap-2 text-sm text-gray-400 font-mono">
-                                                    <span dir="ltr">{reg.country_code} {reg.phone_number}</span>
+                                                    <span dir="ltr">
+                                                        {(() => {
+                                                            // Logic to prevent duplicate country codes
+                                                            const phone = reg.phone_number || '';
+                                                            const code = reg.country_code || '';
+                                                            // Clean both
+                                                            const cleanPhone = phone.replace(/^\+/, '');
+                                                            const cleanCode = code.replace(/^\+/, '');
+                                                            
+                                                            if (cleanPhone.startsWith(cleanCode)) {
+                                                                return `+${cleanPhone}`;
+                                                            }
+                                                            return `${code} ${phone.replace(/^0+/, '')}`;
+                                                        })()}
+                                                    </span>
                                                 </div>
                                                 {reg.email && (
                                                     <div className="text-xs text-gray-500 truncate max-w-[180px]" title={reg.email}>
