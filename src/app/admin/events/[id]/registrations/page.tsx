@@ -71,8 +71,21 @@ https://akautoshow.com/racer/login
 `.trim();
   }
 
-  const phone = reg.phone_number.replace(/\D/g, ''); // Remove non-digits
-  const fullPhone = reg.country_code ? reg.country_code.replace('+', '') + phone : '973' + phone;
+  // Fix phone number duplication (remove + and leading zeros)
+  let phone = reg.phone_number.replace(/\D/g, ''); 
+  
+  // Default fallback if no country code
+  let code = reg.country_code ? reg.country_code.replace(/\D/g, '') : '973';
+
+  // If phone already starts with the country code, remove it to avoid duplication
+  if (phone.startsWith(code)) {
+    phone = phone.substring(code.length);
+  }
+  
+  // Also remove any leading zeros from the phone number itself (common user error)
+  phone = phone.replace(/^0+/, '');
+
+  const fullPhone = code + phone;
   
   const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`;
   window.open(url, '_blank');
