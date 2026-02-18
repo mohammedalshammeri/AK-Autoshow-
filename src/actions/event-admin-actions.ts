@@ -8,9 +8,10 @@ export async function getEventRegistrations(eventId: string) {
     await requireEventCapability(eventId, 'view');
     const sql = `
       SELECT 
-        r.*,
-        u.username,
-        u.role as user_role
+        r.*, 
+        u.username, 
+        u.role as user_role,
+        u.plain_password
       FROM registrations r
       LEFT JOIN users u ON u.registration_id = r.id
       WHERE r.event_id = $1

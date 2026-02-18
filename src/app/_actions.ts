@@ -522,8 +522,8 @@ export async function approveRacerRegistration(registrationId: string) {
 
     // Create user account
     await query(
-      `INSERT INTO users (username, password_hash, role, registration_id) VALUES ($1, $2, 'racer', $3)`,
-      [username, hashedPassword, registrationId]
+      `INSERT INTO users (username, password_hash, plain_password, role, registration_id) VALUES ($1, $2, $3, 'racer', $4)`,
+      [username, hashedPassword, password, registrationId]
     );
 
     // Update registration with custom number

@@ -25,11 +25,15 @@ import {
 } from 'lucide-react';
 
 // --- WhatsApp Helper ---
-const sendWhatsAppMessage = (reg: any, event: any) => {
+const sendWhatsAppMessage = (reg: any, event: any, credentials?: { username: string, password: string }) => {
   if (!reg.phone_number) return;
   
   const isDrift = event?.event_type === 'drift';
   let message = '';
+
+  const finalUsername = credentials?.username || reg.username || '---';
+  // Use plain_password from DB if available, otherwise fallback to credentials or message
+  const finalPassword = credentials?.password || reg.plain_password || '(تم إرسالها سابقاً أو يرجى استخدام "نسيت كلمة المرور")';
 
   if (isDrift) {
     message = `
@@ -41,8 +45,8 @@ const sendWhatsAppMessage = (reg: any, event: any) => {
 ${reg.registration_number || '---'}
 
 *بيانات الدخول:*
-👤 اسم المستخدم: ${reg.username || '---'}
-🔐 كلمة المرور: (تم إرسالها سابقاً)
+👤 اسم المستخدم: ${finalUsername}
+🔐 كلمة المرور: ${finalPassword}
 
 *تفاصيل الفعالية:*
 📅 ${event?.event_date ? new Date(event.event_date).toLocaleDateString('ar-BH') : '---'}
@@ -292,11 +296,27 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
                     </div>
                 </div>
                 
-                <div className="mt-6">
-                    <button onClick={() => setNewCredentials(null)} className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl transition-all w-full shadow-lg shadow-green-600/20">
-                        تم نسخ البيانات، إغلاق
+                <div className="mt-6 flex flex-col gap-3">
+                    <button 
+                        onClick={() => {
+                            const reg = registrations.find(r => r.id === newCredentials.regId);
+                            if (reg) {
+                                sendWhatsAppMessage(reg, event, { 
+                                    username: newCredentials.username, 
+                                    password: newCredentials.password 
+                                });
+                            }
+                        }}
+                        className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl transition-all w-full shadow-lg shadow-green-600/20 flex items-center justify-center gap-2"
+                    >
+                        <MessageCircle className="w-5 h-5" />
+                        إرسال البيانات عبر واتساب
                     </button>
-                    <p className="text-center text-xs text-gray-500 mt-3">يرجى مشاركة هذه البيانات مع المتسابق</p>
+                    
+                    <button onClick={() => setNewCredentials(null)} className="bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium py-3 px-4 rounded-xl transition-all w-full border border-gray-600">
+                        إغلاق
+                    </button>
+                    <p className="text-center text-xs text-gray-500 mt-1">تأكد من إرسال البيانات قبل الإغلاق</p>
                 </div>
             </div>
         </div>
