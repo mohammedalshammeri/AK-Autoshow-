@@ -20,8 +20,59 @@ import {
   UserCheck,
   CreditCard,
   MoreVertical,
-  Eye
+  Eye,
+  MessageCircle 
 } from 'lucide-react';
+
+// --- WhatsApp Helper ---
+const sendWhatsAppMessage = (reg: any, event: any) => {
+  if (!reg.phone_number) return;
+  
+  const isDrift = event?.event_type === 'drift';
+  let message = '';
+
+  if (isDrift) {
+    message = `
+🏁 *مرحباً بك في بطولة J2drift!*
+
+✅ تم قبول طلب تسجيلك
+
+*رقم التسجيل:*
+${reg.registration_number || '---'}
+
+*بيانات الدخول:*
+👤 اسم المستخدم: ${reg.username || '---'}
+🔐 كلمة المرور: (تم إرسالها سابقاً)
+
+*تفاصيل الفعالية:*
+📅 ${event?.event_date ? new Date(event.event_date).toLocaleDateString('ar-BH') : '---'}
+📍 ${event?.location || '---'}
+
+🔑 رابط الدخول:
+https://akautoshow.com/racer/login
+
+⚠️ احتفظ برقم التسجيل معك للتحقق عند البوابة
+
+بالتوفيق! 🏆
+`.trim();
+  } else {
+    message = `
+مرحباً! تم قبول تسجيلك في *${event?.name || 'AKAutoshow'}*
+
+رقم التسجيل: ${reg.registration_number || '---'}
+📅 ${event?.event_date ? new Date(event.event_date).toLocaleDateString('ar-BH') : '---'}
+📍 ${event?.location || '---'}
+
+شكراً لك!
+`.trim();
+  }
+
+  const phone = reg.phone_number.replace(/\D/g, ''); // Remove non-digits
+  const fullPhone = reg.country_code ? reg.country_code.replace('+', '') + phone : '973' + phone;
+  
+  const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`;
+  window.open(url, '_blank');
+};
 
 // --- Image Modal Component ---
 const ImageModal = ({ src, alt, onClose }: { src: string, alt: string, onClose: () => void }) => {
@@ -578,6 +629,16 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
                                                 {processingId === reg.id ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                                             </button>
                                         ) : null}
+
+                                        {reg.status === 'approved' && (
+                                            <button
+                                              onClick={() => sendWhatsAppMessage(reg, event)}
+                                              className="bg-green-600 hover:bg-green-500 text-white p-2 rounded-lg transition-colors border border-green-600 shadow-lg hover:shadow-green-500/20"
+                                              title="إرسال رسالة واتساب"
+                                            >
+                                              <MessageCircle className="w-4 h-4" />
+                                            </button>
+                                        )}
                                         
                                         <Link
                                             href={`/admin/events/${id}/registrations/${reg.id}`}
