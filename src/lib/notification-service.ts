@@ -43,11 +43,13 @@ const EVENT_TEMPLATES = {
         </div>
 
         <div style="background: #2a2a2a; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-          <h3 style="color: #fbbf24; margin-bottom: 15px;">تأكيد الحضور</h3>
-          <p style="font-size: 14px; color: #d1d5db; margin-bottom: 15px;">يرجى تأكيد حضورك في الفعالية عبر الرابط التالي:</p>
-          <a href="https://akautoshow.com/confirm-attendance?reg=${data.registrationNumber}" style="display: inline-block; background: #ef4444; color: #fff; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: bold;">
-            ✅ تأكيد الحضور
+          <h3 style="color: #fbbf24; margin-bottom: 15px;">⚠️ مطلوب منك: تأكيد حضورك</h3>
+          <p style="font-size: 14px; color: #d1d5db; margin-bottom: 5px;">الأماكن <strong style="color: #ef4444;">محدودة</strong> — يرجى تأكيد حضورك للاحتفاظ بمكانك</p>
+          <p style="font-size: 13px; color: #9ca3af; margin-bottom: 15px;">بعد التأكيد سيظهر لك QR Code الخاص بك للدخول</p>
+          <a href="https://akautoshow.com/confirm-attendance?reg=${data.registrationNumber}" style="display: inline-block; background: #f59e0b; color: #000; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+            ✅ نعم، سأحضر الفعالية
           </a>
+          <p style="font-size: 11px; color: #6b7280; margin-top: 10px;">إذا لم تتمكن من الحضور، يُرجى عدم التأكيد حتى يستفيد غيرك</p>
         </div>
 
         <div style="background: #2a2a2a; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
@@ -89,7 +91,8 @@ const EVENT_TEMPLATES = {
 📅 ${data.eventDate}
 📍 ${data.location}
 
-✅ تأكيد الحضور:
+✅ تأكيد حضورك (مطلوب):
+الأماكن محدودة — اضغط الرابط أدناه لتأكيد حضورك والحصول على QR Code الخاص بك:
 https://akautoshow.com/confirm-attendance?reg=${data.registrationNumber}
 
 ⚠️ احتفظ برقم التسجيل معك للتحقق عند البوابة

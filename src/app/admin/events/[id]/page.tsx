@@ -13,6 +13,8 @@ interface EventStats {
   pendingCount: number;
   approvedCount: number;
   rejectedCount: number;
+  attendanceConfirmedCount: number;
+  attendanceNotConfirmedCount: number;
 }
 
 type Round = {
@@ -163,6 +165,28 @@ export default function EventDashboard({ params }: { params: Promise<{ id: strin
             <p className="text-gray-300 font-bold">مرفوض</p>
           </div>
         </div>
+
+        {/* Attendance Confirmation Stats */}
+        {(stats?.approvedCount ?? 0) > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div className="bg-gradient-to-br from-emerald-600/20 to-emerald-800/20 border border-emerald-700/50 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-3xl">✅</span>
+                <span className="text-4xl font-black text-emerald-400">{stats?.attendanceConfirmedCount || 0}</span>
+              </div>
+              <p className="text-gray-300 font-bold">أكد حضوره</p>
+              <p className="text-gray-500 text-xs mt-1">من أصل {stats?.approvedCount || 0} مقبول</p>
+            </div>
+            <div className="bg-gradient-to-br from-orange-600/20 to-orange-800/20 border border-orange-700/50 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-3xl">⏳</span>
+                <span className="text-4xl font-black text-orange-400">{stats?.attendanceNotConfirmedCount || 0}</span>
+              </div>
+              <p className="text-gray-300 font-bold">لم يؤكد حضوره بعد</p>
+              <p className="text-gray-500 text-xs mt-1">مقبولون لكن لم يضغطوا تأكيد</p>
+            </div>
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

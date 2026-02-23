@@ -17,7 +17,9 @@ export async function GET(
         COUNT(r.id) as "totalRegistrations",
         COUNT(CASE WHEN r.status = 'pending' THEN 1 END) as "pendingCount",
         COUNT(CASE WHEN r.status = 'approved' THEN 1 END) as "approvedCount",
-        COUNT(CASE WHEN r.status = 'rejected' THEN 1 END) as "rejectedCount"
+        COUNT(CASE WHEN r.status = 'rejected' THEN 1 END) as "rejectedCount",
+        COUNT(CASE WHEN r.status = 'approved' AND r.attendance_confirmed = TRUE THEN 1 END) as "attendanceConfirmedCount",
+        COUNT(CASE WHEN r.status = 'approved' AND (r.attendance_confirmed = FALSE OR r.attendance_confirmed IS NULL) THEN 1 END) as "attendanceNotConfirmedCount"
       FROM events e
       LEFT JOIN registrations r ON r.event_id = e.id
       WHERE e.id = $1
