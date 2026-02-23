@@ -13,6 +13,8 @@ async function main() {
   const eventName = '🏁 Drift & Freestyle Nights – You Can | Ramadan 2026';
   // 8:00 PM Bahrain time = 17:00:00 UTC
   const newDate = '2026-02-27T17:00:00.000Z';
+  const roundLabelAr = 'الجولة الثانية';
+  const roundLabelEn = 'Round 2';
   try {
     const res = await pool.query(
       `UPDATE events SET status = 'active', is_active = TRUE, event_date = $1
@@ -23,6 +25,7 @@ async function main() {
       console.log('❌ لم يتم العثور على الفعالية');
     } else {
       console.log('✅ تم فتح التسجيل وتحديث التاريخ والوقت:', res.rows[0]);
+      console.log('ℹ️  ملاحظة: هذه الفعالية هي', roundLabelAr, '|', roundLabelEn);
     }
   } catch (err) {
     console.error('خطأ في التحديث:', err);
