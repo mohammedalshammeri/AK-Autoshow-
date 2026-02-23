@@ -26,7 +26,6 @@ async function getRegistration(regNumber: string) {
 export default async function ConfirmAttendancePage({ searchParams }: PageProps) {
   const { reg } = await searchParams;
 
-  // No reg number provided
   if (!reg) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4" dir="rtl">
@@ -42,7 +41,6 @@ export default async function ConfirmAttendancePage({ searchParams }: PageProps)
 
   const registration = await getRegistration(reg);
 
-  // Not found
   if (!registration) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4" dir="rtl">
@@ -56,7 +54,6 @@ export default async function ConfirmAttendancePage({ searchParams }: PageProps)
     );
   }
 
-  // Not approved
   if (registration.status !== 'approved') {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4" dir="rtl">
