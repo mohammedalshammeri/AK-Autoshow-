@@ -43,7 +43,7 @@ async function requireManageStaff(eventId: string, userId: string): Promise<bool
   if (!user || user.is_active === false) return false;
 
   const globalRole = String(user.role);
-  if (globalRole === 'super_admin' || globalRole === 'admin' || globalRole === 'management') return true;
+  if (globalRole === 'super_admin' || globalRole === 'admin' || globalRole === 'management' || globalRole === 'organizer') return true;
 
   const staffResult = await query(
     `SELECT event_role FROM event_admin_users WHERE event_id = $1::bigint AND admin_user_id = $2`,

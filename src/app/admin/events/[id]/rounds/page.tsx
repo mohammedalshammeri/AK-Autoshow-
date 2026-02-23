@@ -99,6 +99,18 @@ export default function RoundsPage({ params }: { params: Promise<{ id: string }>
                             
                             <div className="flex gap-3">
                                 <Link 
+                                    href={`/admin/events/${id}/rounds/${round.id}/registrations`}
+                                    className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-bold transition shadow-lg shadow-blue-900/20 flex items-center gap-1.5"
+                                >
+                                    <span>👥</span>
+                                    <span>المسجلون</span>
+                                    {(round.registration_count > 0) && (
+                                        <span className="bg-blue-400/20 text-blue-200 text-xs px-2 py-0.5 rounded-full">
+                                            {round.registration_count}
+                                        </span>
+                                    )}
+                                </Link>
+                                <Link 
                                     href={`/admin/events/${id}/rounds/${round.id}`}
                                     className="bg-yellow-600 hover:bg-yellow-500 text-black px-6 py-2 rounded-xl font-bold transition shadow-lg shadow-yellow-900/20"
                                 >

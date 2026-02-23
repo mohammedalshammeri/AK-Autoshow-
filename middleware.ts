@@ -1,6 +1,16 @@
 import createMiddleware from 'next-intl/middleware';
 import {routing} from './src/routing';
 import { NextRequest, NextResponse } from 'next/server';
+import { jwtVerify } from 'jose';
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'AKAutoshow-Super-Secret-JWT-Key-2025-Admin-System'
+);
+
+// Roles that have FULL access to the main admin dashboard
+// Everyone else (organizer, event_staff, moderator, viewer, gate_staff, etc.)
+// is restricted to their assigned event only
+const GLOBAL_ADMIN_ROLES = new Set(['super_admin', 'admin', 'management']);
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -36,13 +46,43 @@ export default async function middleware(request: NextRequest) {
     }
 
     const token = request.cookies.get('carshowx_admin_token')?.value;
-      if (!token) {
+    if (!token) {
       console.log('🔒 Middleware: No admin token, redirecting to login');
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
 
-    console.log('✅ Middleware: Admin token found, allowing access');
-    return NextResponse.next();
+    // Decode & verify the JWT to enforce role-based routing
+    try {
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      const role = (payload.role as string) || '';
+      const assignedEventId = payload.assignedEventId as string | number | null;
+
+      // Blocked: everyone who is NOT a global admin → they can only access their event
+      if (!GLOBAL_ADMIN_ROLES.has(role)) {
+        if (!assignedEventId) {
+          // No assigned event → kick to login
+          console.log('🔒 Middleware: Event-only role with no assignedEventId, redirecting to login');
+          return NextResponse.redirect(new URL('/admin/login', request.url));
+        }
+
+        const allowedPrefix = `/admin/events/${assignedEventId}`;
+
+        // Allow access ONLY to their event pages
+        if (!pathname.startsWith(allowedPrefix)) {
+          console.log(`🔒 Middleware: Role "${role}" blocked from ${pathname}, redirecting to assigned event`);
+          return NextResponse.redirect(new URL(allowedPrefix, request.url));
+        }
+      }
+
+      return NextResponse.next();
+    } catch {
+      // Invalid or expired JWT → force re-login
+      console.log('🔒 Middleware: Invalid JWT, redirecting to login');
+      const response = NextResponse.redirect(new URL('/admin/login', request.url));
+      response.cookies.delete('carshowx_admin_token');
+      response.cookies.delete('carshowx_admin_session');
+      return response;
+    }
   }
 
   // Organizer auth & routing (no internationalization)

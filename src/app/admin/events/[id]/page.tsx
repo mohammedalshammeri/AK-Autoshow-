@@ -2,35 +2,81 @@
 
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { Users, CheckCircle, XCircle, Clock, Trophy, Flag } from 'lucide-react';
+import { Users, CheckCircle, XCircle, Clock, Trophy, Flag, ToggleLeft, ToggleRight, Calendar } from 'lucide-react';
 
 interface EventStats {
   eventName: string;
   eventDate: string;
   location: string;
+  eventStatus: string;
   totalRegistrations: number;
   pendingCount: number;
   approvedCount: number;
   rejectedCount: number;
 }
 
+type Round = {
+  id: string;
+  name: string;
+  round_order: number;
+  status: string;
+  round_date: string;
+  registration_count: number;
+  pending_count: number;
+  approved_count: number;
+};
+
 export default function EventDashboard({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [stats, setStats] = useState<EventStats | null>(null);
+  const [rounds, setRounds] = useState<Round[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isTogglingReg, setIsTogglingReg] = useState(false);
+
+  const loadStats = () => {
+    Promise.all([
+      fetch(`/api/admin/events/${id}/stats`).then(r => r.json()),
+      fetch(`/api/admin/events/${id}/rounds`).then(r => r.json()),
+    ]).then(([statsData, roundsData]) => {
+      setStats(statsData);
+      if (roundsData.success) setRounds(roundsData.data || []);
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
+  };
 
   useEffect(() => {
-    fetch(`/api/admin/events/${id}/stats`)
-      .then(res => res.json())
-      .then(data => {
-        setStats(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+    loadStats();
   }, [id]);
+
+  const handleToggleRegistration = async () => {
+    if (!stats) return;
+    const isCurrentlyActive = stats.eventStatus === 'active';
+    const newStatus = isCurrentlyActive ? 'paused' : 'active';
+    const confirmMsg = isCurrentlyActive 
+      ? 'هل تريد إيقاف التسجيل مؤقتاً؟' 
+      : 'هل تريد فتح التسجيل مجدداً؟';
+    if (!window.confirm(confirmMsg)) return;
+    setIsTogglingReg(true);
+    try {
+      const res = await fetch(`/api/admin/events/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        setStats(prev => prev ? { ...prev, eventStatus: newStatus } : prev);
+      } else {
+        alert('حدث خطأ في تحديث حالة التسجيل');
+      }
+    } catch {
+      alert('حدث خطأ غير متوقع');
+    } finally {
+      setIsTogglingReg(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -40,18 +86,46 @@ export default function EventDashboard({ params }: { params: Promise<{ id: strin
     );
   }
 
+  const isRegActive = stats?.eventStatus === 'active';
+
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6" dir="rtl">
       <div className="max-w-7xl mx-auto">
         
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-yellow-500 to-red-600 mb-2">
-            {stats?.eventName || 'لوحة تحكم الفعالية'}
-          </h1>
-          <div className="flex gap-6 text-gray-400 text-sm">
-            <span>📅 {stats?.eventDate}</span>
-            <span>📍 {stats?.location}</span>
+        <div className="mb-8 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div>
+            <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-yellow-500 to-red-600 mb-2">
+              {stats?.eventName || 'لوحة تحكم الفعالية'}
+            </h1>
+            <div className="flex gap-6 text-gray-400 text-sm">
+              <span>📅 {stats?.eventDate}</span>
+              <span>📍 {stats?.location}</span>
+            </div>
+          </div>
+          
+          {/* Registration Toggle */}
+          <div className="flex flex-col items-end gap-2">
+            <div className={`text-sm font-semibold px-3 py-1 rounded-full border ${isRegActive ? 'bg-green-500/10 text-green-400 border-green-500/30' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30'}`}>
+              {isRegActive ? '✅ التسجيل مفتوح' : '⏸️ التسجيل موقوف'}
+            </div>
+            <button
+              onClick={handleToggleRegistration}
+              disabled={isTogglingReg}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg disabled:opacity-50 ${
+                isRegActive 
+                  ? 'bg-yellow-600 hover:bg-yellow-500 text-white' 
+                  : 'bg-green-600 hover:bg-green-500 text-white'
+              }`}
+            >
+              {isTogglingReg ? (
+                <span className="animate-spin">⏳</span>
+              ) : isRegActive ? (
+                <><ToggleRight className="w-5 h-5" /> إيقاف التسجيل مؤقتاً</>
+              ) : (
+                <><ToggleLeft className="w-5 h-5" /> فتح التسجيل</>
+              )}
+            </button>
           </div>
         </div>
 
@@ -128,6 +202,73 @@ export default function EventDashboard({ params }: { params: Promise<{ id: strin
             <p className="text-gray-400 text-sm text-center">داخل لوحة الفعالية فقط</p>
           </Link>
         </div>
+
+        {/* Weekly Rounds Section */}
+        {rounds.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <Calendar className="w-6 h-6 text-blue-400" />
+              <h2 className="text-xl font-black text-white">تسجيلات الأسابيع</h2>
+              <span className="text-gray-500 text-sm">— إدارة مسجلي كل أسبوع بشكل منفصل</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {rounds.map((round) => {
+                const isActive = round.status === 'active';
+                const isCompleted = round.status === 'completed';
+                const statusColor = isActive
+                  ? 'border-green-600/60 from-green-900/20 to-green-800/10'
+                  : isCompleted
+                  ? 'border-gray-600/50 from-gray-800/20 to-gray-900/20'
+                  : 'border-blue-700/40 from-blue-900/20 to-blue-800/10';
+                const badgeColor = isActive
+                  ? 'bg-green-500/20 text-green-400'
+                  : isCompleted
+                  ? 'bg-gray-500/20 text-gray-400'
+                  : 'bg-blue-500/20 text-blue-400';
+                const badgeLabel = isActive ? '🏁 جاري' : isCompleted ? '✅ مكتمل' : '⏳ قادم';
+
+                return (
+                  <Link
+                    key={round.id}
+                    href={`/admin/events/${id}/rounds/${round.id}/registrations`}
+                    className={`bg-gradient-to-br ${statusColor} border rounded-xl p-5 flex flex-col gap-3 hover:scale-105 transition-all group`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <span className="text-3xl font-black text-white opacity-30 group-hover:opacity-60 transition">
+                        {round.round_order}
+                      </span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${badgeColor}`}>
+                        {badgeLabel}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white text-sm leading-tight group-hover:text-blue-300 transition">
+                        {round.name}
+                      </h3>
+                      {round.round_date && (
+                        <p className="text-gray-500 text-xs mt-0.5">
+                          📅 {new Date(round.round_date).toLocaleDateString('ar-BH', { day: 'numeric', month: 'short' })}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-3 text-xs">
+                      <span className="text-blue-400 font-bold">{round.registration_count || 0} <span className="text-gray-500 font-normal">مسجل</span></span>
+                      {Number(round.pending_count) > 0 && (
+                        <span className="text-yellow-400 font-bold">{round.pending_count} <span className="text-gray-500 font-normal">ينتظر</span></span>
+                      )}
+                      {Number(round.approved_count) > 0 && (
+                        <span className="text-green-400 font-bold">{round.approved_count} <span className="text-gray-500 font-normal">مقبول</span></span>
+                      )}
+                    </div>
+                    <div className="text-xs text-blue-400 group-hover:text-blue-300 transition font-semibold">
+                      👥 إدارة المسجلين ←
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

@@ -124,8 +124,9 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
   const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [newCredentials, setNewCredentials] = useState<any>(null);
+  const [approvalSuccess, setApprovalSuccess] = useState<string | null>(null);
   const [filter, setFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [accessError, setAccessError] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<{src: string, alt: string} | null>(null);
@@ -177,6 +178,11 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
       result = result.filter(r => r.status === filter);
     }
 
+    // Filter by category
+    if (categoryFilter !== 'all') {
+      result = result.filter(r => (r.car_category || '').toLowerCase() === categoryFilter.toLowerCase());
+    }
+
     // Search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -193,7 +199,7 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
     }
 
     setFilteredData(result);
-  }, [registrations, filter, searchQuery]);
+  }, [registrations, filter, categoryFilter, searchQuery]);
 
   const handleApprove = async (regId: string) => {
     if (!window.confirm('هل أنت متأكد من قبول هذا المتسابق؟ سيتم إنشاء حساب له فوراً.')) return;
@@ -202,14 +208,33 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
     try {
       const res = await approveRacerRegistration(regId);
       if (res.success) {
-        setNewCredentials({
-          username: res.username,
-          password: res.password,
-          regId: regId
-        });
-        loadData(); // Refresh list to update status
+        setApprovalSuccess(regId);
+        loadData();
+        setTimeout(() => setApprovalSuccess(null), 3000);
       } else {
         alert('خطأ: ' + res.error);
+      }
+    } catch (e) {
+      alert('حدث خطأ غير متوقع');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleReject = async (regId: string) => {
+    if (!window.confirm('هل أنت متأكد من رفض هذا المتسابق؟ لن يتم إرسال أي إشعار.')) return;
+    setProcessingId(regId);
+    try {
+      const res = await fetch(`/api/admin/events/${id}/registrations/${regId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'rejected' })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        loadData();
+      } else {
+        alert('خطأ في الرفض: ' + (data.error || 'Unknown error'));
       }
     } catch (e) {
       alert('حدث خطأ غير متوقع');
@@ -267,7 +292,10 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
       'الحالة',
       'اسم المستخدم',
       'كلمة المرور (للمستخدمين الجدد فقط)',
-      'تاريخ التسجيل'
+      'تاريخ التسجيل',
+      'اسم المساعد/الراكب',
+      'رقم هوية المساعد',
+      'رقم جوال المساعد'
     ];
 
     // CSV Rows
@@ -302,7 +330,10 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
         `"${statusAr}"`,
         `"${r.username || ''}"`,
         `"${r.plain_password || ''}"`,
-        `"${r.created_at ? new Date(r.created_at).toLocaleDateString('ar-BH') : ''}"`
+        `"${r.created_at ? new Date(r.created_at).toLocaleDateString('ar-BH') : ''}"`,
+        `"${r.passenger_name || ''}"`,
+        `"${r.passenger_cpr || ''}"`,
+        `"${r.passenger_mobile || ''}"`
       ].join(',');
     });
 
@@ -358,57 +389,11 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
 
   return (
     <div className="min-h-screen bg-[#0f1115] text-gray-100" dir="rtl">
-      {/* Credentials Modal */}
-      {newCredentials && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in zoom-in duration-300">
-            <div className="bg-[#1a1c23] border border-green-500/30 p-8 rounded-2xl max-w-md w-full shadow-2xl relative">
-                <button onClick={() => setNewCredentials(null)} className="absolute top-4 left-4 text-gray-500 hover:text-white transition-colors">✕</button>
-                
-                <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/20">
-                    <CheckCircle className="w-8 h-8 text-green-500" />
-                </div>
-                
-                <h3 className="text-xl font-bold text-center text-white mb-2">تم قبول المتسابق بنجاح!</h3>
-                <p className="text-gray-400 text-center text-sm mb-6">تم توليد بيانات الدخول الخاصة بالمتسابق تلقائياً.</p>
-                
-                <div className="bg-[#111317] p-4 rounded-xl border border-gray-800 space-y-4">
-                    <div className="flex justify-between items-center border-b border-gray-800 pb-3">
-                        <span className="text-xs text-gray-500 font-medium uppercase">اسم المستخدم</span>
-                        <div className="flex items-center gap-2">
-                           <code className="text-yellow-400 font-mono font-bold text-lg select-all">{newCredentials.username}</code>
-                        </div>
-                    </div>
-                    <div className="flex justify-between items-center pt-1">
-                        <span className="text-xs text-gray-500 font-medium uppercase">كلمة المرور</span>
-                        <div className="flex items-center gap-2">
-                           <code className="text-red-400 font-mono font-bold text-lg select-all">{newCredentials.password}</code>
-                        </div>
-                    </div>
-                </div>
-                
-                <div className="mt-6 flex flex-col gap-3">
-                    <button 
-                        onClick={() => {
-                            const reg = registrations.find(r => r.id === newCredentials.regId);
-                            if (reg) {
-                                sendWhatsAppMessage(reg, event, { 
-                                    username: newCredentials.username, 
-                                    password: newCredentials.password 
-                                });
-                            }
-                        }}
-                        className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl transition-all w-full shadow-lg shadow-green-600/20 flex items-center justify-center gap-2"
-                    >
-                        <MessageCircle className="w-5 h-5" />
-                        إرسال البيانات عبر واتساب
-                    </button>
-                    
-                    <button onClick={() => setNewCredentials(null)} className="bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium py-3 px-4 rounded-xl transition-all w-full border border-gray-600">
-                        إغلاق
-                    </button>
-                    <p className="text-center text-xs text-gray-500 mt-1">تأكد من إرسال البيانات قبل الإغلاق</p>
-                </div>
-            </div>
+      {/* Success Toast */}
+      {approvalSuccess && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] bg-green-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-300">
+          <CheckCircle className="w-5 h-5" />
+          تم قبول المتسابق وإرسال الإشعار بنجاح
         </div>
       )}
 
@@ -534,6 +519,18 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
                         <option value="rejected">المرفوضين</option>
                     </select>
                 </div>
+                <div className="relative min-w-[150px]">
+                    <select 
+                        className="w-full bg-[#0f1115] border border-gray-700 text-white text-sm rounded-lg px-4 py-2.5 focus:border-indigo-500 outline-none appearance-none cursor-pointer"
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                    >
+                        <option value="all">جميع الفئات</option>
+                        <option value="headers">Headers</option>
+                        <option value="turbo">Turbo</option>
+                        <option value="4x4">4x4</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -547,6 +544,7 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
                             <th className="py-4 px-6 text-xs text-gray-400 font-semibold uppercase tracking-wider">المتسابق</th>
                             <th className="py-4 px-6 text-xs text-gray-400 font-semibold uppercase tracking-wider">المركبة</th>
                             <th className="py-4 px-6 text-xs text-gray-400 font-semibold uppercase tracking-wider">الوثائق الرسمية</th>
+                            <th className="py-4 px-6 text-xs text-gray-400 font-semibold uppercase tracking-wider">تاريخ التسجيل</th>
                             <th className="py-4 px-6 text-xs text-gray-400 font-semibold uppercase tracking-wider">الحالة</th>
                             <th className="py-4 px-6 text-xs text-gray-400 font-semibold uppercase tracking-wider w-32 text-center">الإجراءات</th>
                         </tr>
@@ -710,6 +708,18 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
                                     </div>
                                 </td>
 
+                                {/* Registration Date Column */}
+                                <td className="py-5 px-6">
+                                    <div className="text-sm">
+                                        {reg.created_at ? (
+                                            <div>
+                                                <div className="text-gray-300 text-xs font-mono">{new Date(reg.created_at).toLocaleDateString('ar-BH', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
+                                                <div className="text-gray-500 text-xs mt-0.5">{new Date(reg.created_at).toLocaleTimeString('ar-BH', { hour: '2-digit', minute: '2-digit' })}</div>
+                                            </div>
+                                        ) : <span className="text-gray-600">—</span>}
+                                    </div>
+                                </td>
+
                                 <td className="py-5 px-6">
                                     <div className="flex flex-col gap-2">
                                         {getStatusBadge(reg.status)}
@@ -765,6 +775,17 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
                                             </button>
                                         ) : null}
 
+                                        {reg.status === 'pending' || reg.status === 'approved' ? (
+                                            <button 
+                                                disabled={!!processingId}
+                                                onClick={() => handleReject(reg.id)}
+                                                className="bg-red-700 hover:bg-red-600 text-white p-2 rounded-lg transition-all shadow-lg hover:shadow-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                title="رفض المتسابق (بدون إشعار)"
+                                            >
+                                                {processingId === reg.id ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                                            </button>
+                                        ) : null}
+
                                         {reg.status === 'approved' && (
                                             <button
                                               onClick={() => sendWhatsAppMessage(reg, event)}
@@ -801,7 +822,7 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
                         لم يتم العثور على أي تسجيلات مطابقة لمعايير البحث الحالية. حاول تغيير الفلتر أو كلمة البحث.
                     </p>
                     <button 
-                      onClick={() => {setFilter('all'); setSearchQuery('');}}
+                      onClick={() => {setFilter('all'); setCategoryFilter('all'); setSearchQuery('');}}
                       className="mt-6 text-indigo-400 hover:text-indigo-300 font-medium text-sm hover:underline"
                     >
                       مسح الفلاتر

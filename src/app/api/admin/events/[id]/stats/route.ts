@@ -13,6 +13,7 @@ export async function GET(
         e.name as "eventName",
         e.event_date as "eventDate", 
         e.location,
+        e.status as "eventStatus",
         COUNT(r.id) as "totalRegistrations",
         COUNT(CASE WHEN r.status = 'pending' THEN 1 END) as "pendingCount",
         COUNT(CASE WHEN r.status = 'approved' THEN 1 END) as "approvedCount",
@@ -20,7 +21,7 @@ export async function GET(
       FROM events e
       LEFT JOIN registrations r ON r.event_id = e.id
       WHERE e.id = $1
-      GROUP BY e.id, e.name, e.event_date, e.location
+      GROUP BY e.id, e.name, e.event_date, e.location, e.status
     `, [id]);
 
     if (result.rows.length === 0) {

@@ -42,16 +42,12 @@ const EVENT_TEMPLATES = {
           </div>
         </div>
 
-        <div style="background: #2a2a2a; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-          <h3 style="color: #fbbf24; margin-bottom: 15px;">بيانات الدخول لنظام الجولات</h3>
-          <p><strong>اسم المستخدم:</strong> <code style="background: #000; padding: 5px 10px; border-radius: 3px;">${data.username}</code></p>
-          <p><strong>كلمة المرور:</strong> <code style="background: #000; padding: 5px 10px; border-radius: 3px;">${data.password}</code></p>
-          <p style="color: #fbbf24; font-size: 14px; margin-top: 10px;">⚠️ يرجى حفظ هذه البيانات في مكان آمن</p>
-          <div style="text-align: center; margin-top: 20px;">
-            <a href="https://akautoshow.com/racer/login" style="display: inline-block; background: #ef4444; color: #fff; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: bold;">
-              🔑 تسجيل الدخول للنظام
-            </a>
-          </div>
+        <div style="background: #2a2a2a; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+          <h3 style="color: #fbbf24; margin-bottom: 15px;">تأكيد الحضور</h3>
+          <p style="font-size: 14px; color: #d1d5db; margin-bottom: 15px;">يرجى تأكيد حضورك في الفعالية عبر الرابط التالي:</p>
+          <a href="https://akautoshow.com/confirm-attendance?reg=${data.registrationNumber}" style="display: inline-block; background: #ef4444; color: #fff; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+            ✅ تأكيد الحضور
+          </a>
         </div>
 
         <div style="background: #2a2a2a; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
@@ -89,16 +85,12 @@ const EVENT_TEMPLATES = {
 *رقم التسجيل:*
 \`${data.registrationNumber}\`
 
-*بيانات الدخول:*
-👤 اسم المستخدم: \`${data.username}\`
-🔐 كلمة المرور: \`${data.password}\`
-
 *تفاصيل الفعالية:*
 📅 ${data.eventDate}
 📍 ${data.location}
 
-🔑 رابط الدخول:
-https://akautoshow.com/racer/login
+✅ تأكيد الحضور:
+https://akautoshow.com/confirm-attendance?reg=${data.registrationNumber}
 
 ⚠️ احتفظ برقم التسجيل معك للتحقق عند البوابة
 
@@ -163,17 +155,14 @@ export async function sendApprovalNotification(
   const template = EVENT_TEMPLATES[eventType];
   
   try {
-    // Generate QR Code for drift events
+    // Generate QR Code for drift events — use external API URL (works in all email clients)
     let qrCode = null;
-    if (eventType === 'drift' && recipientData.username) {
-      const qrData: RegistrationQRData = {
-        registrationNumber: recipientData.registrationNumber,
-        fullName: recipientData.fullName,
-        eventName: recipientData.eventName,
-        eventDate: recipientData.eventDate,
-        carDetails: recipientData.carDetails || 'N/A'
-      };
-      qrCode = await generateRegistrationQR(qrData);
+    if (eventType === 'drift') {
+      const qrData = JSON.stringify({
+        regNum: recipientData.registrationNumber,
+        name: recipientData.fullName,
+      });
+      qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&color=000000&bgcolor=ffffff&margin=10`;
     }
 
     // Prepare email data

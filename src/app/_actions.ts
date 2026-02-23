@@ -438,6 +438,20 @@ export async function registerDynamicEventAction(formData: FormData): Promise<Re
     const regId = result.rows[0].id;
     console.log('✅ Registration created:', regId);
 
+    // Auto-assign to active round (if event has weekly rounds)
+    try {
+      const activeRoundRes = await query(
+        `SELECT id FROM rounds WHERE event_id = $1 AND status = 'active' ORDER BY round_order ASC LIMIT 1`,
+        [eventId]
+      );
+      if (activeRoundRes.rows.length > 0) {
+        await query(`UPDATE registrations SET round_id = $1 WHERE id = $2`, [activeRoundRes.rows[0].id, regId]);
+        console.log('✅ Auto-assigned to active round:', activeRoundRes.rows[0].id);
+      }
+    } catch (roundErr) {
+      console.warn('Could not auto-assign round_id:', roundErr);
+    }
+
     // 7. Car Images
     let firstCarImageUrl = '';
     for (const [index, file] of validCarImages.entries()) {
@@ -502,9 +516,18 @@ export async function approveRacerRegistration(registrationId: string) {
     const userCheck = await query(`SELECT id FROM users WHERE registration_id = $1`, [registrationId]);
     if (userCheck.rows.length > 0) return { success: false, message: 'User already exists' };
 
-    // Generate credentials
-    const sanitizedName = reg.full_name.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-    const username = (sanitizedName + Math.floor(100 + Math.random() * 900)).toLowerCase();
+    // Generate credentials with collision-safe username
+    const sanitizedName = reg.full_name.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'racer';
+    const baseUsername = sanitizedName.slice(0, 8); // keep it short
+    let username = '';
+    let attempts = 0;
+    while (attempts < 5) {
+      const candidate = baseUsername + Math.floor(1000 + Math.random() * 9000);
+      const existing = await query(`SELECT id FROM users WHERE username = $1`, [candidate]);
+      if (existing.rows.length === 0) { username = candidate; break; }
+      attempts++;
+    }
+    if (!username) username = 'racer' + Date.now().toString().slice(-6);
     const password = Math.random().toString(36).slice(-8); 
     const hashedPassword = await bcrypt.hash(password, 10);
 

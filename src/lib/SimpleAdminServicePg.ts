@@ -66,7 +66,8 @@ export class AdminService {
         userId: user.id,
         sessionId: session.id,
         email: user.email,
-        role: user.role
+        role: user.role,
+        assignedEventId: user.assigned_event_id || null,
       });
 
       // Update session with JWT token

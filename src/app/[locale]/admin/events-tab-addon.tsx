@@ -15,7 +15,7 @@ export interface Event {
   description_ar?: string;
   description_en?: string;
   website_url?: string;
-  status?: 'upcoming' | 'current' | 'ended' | 'paused';
+  status?: 'upcoming' | 'active' | 'current' | 'ended' | 'paused' | 'completed' | 'cancelled';
   features?: string[];
   registration_fee?: number;
   max_participants?: number;
@@ -49,13 +49,15 @@ export function EventsTab({
     const now = new Date();
     const eventDate = new Date(event.event_date);
     
-    if (event.status === 'current') {
+    if (event.status === 'active') {
+      return { status: 'active', label: 'نشطة', color: 'bg-green-600', icon: '🟢' };
+    } else if (event.status === 'current') {
       return { status: 'current', label: 'جارية الآن', color: 'bg-green-600', icon: '🔴' };
     } else if (event.status === 'paused') {
       return { status: 'paused', label: 'موقوفة مؤقتاً', color: 'bg-yellow-600', icon: '⏸️' };
-    } else if (event.status === 'ended') {
+    } else if (event.status === 'ended' || event.status === 'completed') {
       return { status: 'ended', label: 'انتهت', color: 'bg-gray-600', icon: '⚫' };
-    } else if (eventDate > now) {
+    } else if (event.status === 'upcoming' || eventDate > now) {
       return { status: 'upcoming', label: 'قادمة', color: 'bg-blue-600', icon: '🔵' };
     } else {
       return { status: 'ended', label: 'انتهت', color: 'bg-gray-600', icon: '⚫' };

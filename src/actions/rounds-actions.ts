@@ -7,7 +7,18 @@ import { requireEventCapability } from '@/lib/event-permissions';
 export async function getRounds(eventId: string) {
   try {
     await requireEventCapability(eventId, 'view');
-    const sql = `SELECT * FROM rounds WHERE event_id = $1 ORDER BY round_order ASC`;
+    const sql = `
+      SELECT
+        r.*,
+        COUNT(reg.id) AS registration_count,
+        COUNT(CASE WHEN reg.status = 'approved' THEN 1 END) AS approved_count,
+        COUNT(CASE WHEN reg.status = 'pending' THEN 1 END) AS pending_count
+      FROM rounds r
+      LEFT JOIN registrations reg ON reg.round_id = r.id::text
+      WHERE r.event_id = $1
+      GROUP BY r.id
+      ORDER BY r.round_order ASC
+    `;
     const result = await query(sql, [eventId]);
     return { success: true, data: result.rows };
   } catch (error: any) {

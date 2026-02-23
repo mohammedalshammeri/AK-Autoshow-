@@ -16,6 +16,7 @@ const GLOBAL_FULL_ACCESS_ROLES = new Set([
   'super_admin',
   'admin',
   'management',
+  'organizer',
 ]);
 
 function roleAllows(capability: EventCapability, role: EventRole): boolean {

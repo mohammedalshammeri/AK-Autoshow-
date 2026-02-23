@@ -29,7 +29,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     // Allowed fields to update
     const fields = [
-      'name', 'description', 'event_date', 'location', 'status',
+      'name', 'description', 'event_date', 'location', 'status', 'is_active',
       'name_ar', 'name_en', 'description_ar', 'description_en', 
       'location_ar', 'location_en', 'image_url', 'max_participants'
     ];
@@ -49,7 +49,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     // Add ID as the last parameter
     values.push(id);
     
-    const queryText = `UPDATE events SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${paramCount} RETURNING *`;
+    const queryText = `UPDATE events SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
     
     const result = await query(queryText, values);
 

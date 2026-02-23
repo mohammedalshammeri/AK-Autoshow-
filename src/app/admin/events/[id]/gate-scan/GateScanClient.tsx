@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type GateScanResult = {
   id: string;
@@ -20,6 +20,115 @@ type GateScanResult = {
   car_images?: { id: string; image_url: string }[];
 };
 
+function QRScannerModal({
+  onDetected,
+  onClose,
+}: {
+  onDetected: (value: string) => void;
+  onClose: () => void;
+}) {
+  const scannerDivId = 'gate-qr-scanner-div';
+  const scannerRef = useRef<any>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const hasDetected = useRef(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const startScanner = async () => {
+      try {
+        const { Html5QrcodeScanner } = await import('html5-qrcode');
+        if (!mounted) return;
+
+        const scanner = new Html5QrcodeScanner(
+          scannerDivId,
+          {
+            fps: 10,
+            qrbox: { width: 280, height: 280 },
+            rememberLastUsedCamera: true,
+            showTorchButtonIfSupported: true,
+          },
+          false
+        );
+        scannerRef.current = scanner;
+
+        scanner.render(
+          (decodedText: string) => {
+            if (hasDetected.current) return;
+            hasDetected.current = true;
+
+            // Try to parse JSON QR format: { regNum, name, ... }
+            let searchValue = decodedText;
+            try {
+              const parsed = JSON.parse(decodedText);
+              if (parsed?.regNum) searchValue = parsed.regNum;
+              else if (parsed?.registrationNumber) searchValue = parsed.registrationNumber;
+            } catch {
+              // plain text — use as-is
+            }
+
+            scanner.clear().catch(() => {});
+            onDetected(searchValue);
+          },
+          (errorMsg: string) => {
+            // Ignore per-frame decode failures (normal)
+          }
+        );
+      } catch (e: any) {
+        if (mounted) setScanError('تعذّر تشغيل الكاميرا: ' + (e?.message || ''));
+      }
+    };
+
+    startScanner();
+
+    return () => {
+      mounted = false;
+      scannerRef.current?.clear().catch(() => {});
+    };
+  }, [onDetected]);
+
+  return (
+    <div className="fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-[60] p-4">
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">📷</span>
+            <h2 className="text-white font-bold text-lg">مسح QR Code</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white text-3xl leading-none transition-colors"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Scanner area */}
+        <div className="p-4">
+          {scanError ? (
+            <div className="bg-red-900/30 border border-red-700 text-red-200 p-4 rounded-lg text-center">
+              <div className="text-3xl mb-2">⚠️</div>
+              <p>{scanError}</p>
+            </div>
+          ) : (
+            <div
+              id={scannerDivId}
+              className="w-full rounded-lg overflow-hidden"
+              style={{ minHeight: 320 }}
+            />
+          )}
+        </div>
+
+        {/* Hint */}
+        <div className="px-5 pb-4 text-center">
+          <p className="text-gray-400 text-sm">وجّه الكاميرا نحو QR Code الموجود في بطاقة المتسابق</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function GateScanClient({ eventId }: { eventId: string }) {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -27,11 +136,13 @@ export default function GateScanClient({ eventId }: { eventId: string }) {
   const [selected, setSelected] = useState<GateScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [qrSuccess, setQRSuccess] = useState<string | null>(null);
 
   const canSearch = useMemo(() => query.trim().length > 0, [query]);
 
-  const runSearch = async () => {
-    const q = query.trim();
+  const runSearch = async (overrideQuery?: string) => {
+    const q = (overrideQuery ?? query).trim();
     if (!q) return;
     setError(null);
     setIsSearching(true);
@@ -46,13 +157,24 @@ export default function GateScanClient({ eventId }: { eventId: string }) {
       if (!res.ok || !data?.success) {
         throw new Error(data?.error || 'Failed to search');
       }
-      setResults(Array.isArray(data.results) ? data.results : []);
+      const found: GateScanResult[] = Array.isArray(data.results) ? data.results : [];
+      setResults(found);
+      // Auto-select if exactly one result
+      if (found.length === 1) setSelected(found[0]);
     } catch (e: any) {
       setError(e?.message || 'Search failed');
       setResults([]);
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleQRDetected = (value: string) => {
+    setShowQRScanner(false);
+    setQuery(value);
+    setQRSuccess(value);
+    runSearch(value);
+    setTimeout(() => setQRSuccess(null), 4000);
   };
 
   const updateGateStatus = async (action: 'check_in' | 'reject_gate') => {
@@ -95,10 +217,18 @@ export default function GateScanClient({ eventId }: { eventId: string }) {
 
   return (
     <div className="space-y-6">
+      {/* QR scanned toast */}
+      {qrSuccess && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-teal-600 text-white px-6 py-3 rounded-xl shadow-2xl text-sm font-semibold animate-pulse">
+          📷 تم مسح QR: {qrSuccess}
+        </div>
+      )}
+
       <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
         <h1 className="text-2xl font-bold text-white mb-2">🚩 فحص البوابة</h1>
-        <p className="text-gray-400 text-sm mb-4">ابحث برقم التسجيل، الاسم، البريد، رقم الجوال، أو تفاصيل السيارة.</p>
+        <p className="text-gray-400 text-sm mb-4">ابحث برقم التسجيل، الاسم، البريد، رقم الجوال، أو امسح QR Code مباشرة.</p>
 
+        {/* Search row */}
         <div className="flex flex-col md:flex-row gap-3">
           <input
             value={query}
@@ -109,8 +239,17 @@ export default function GateScanClient({ eventId }: { eventId: string }) {
             placeholder="مثال: BN-... أو الاسم"
             className="w-full px-4 py-3 bg-gray-800 border border-gray-600 text-white rounded focus:border-yellow-500 focus:outline-none"
           />
+          {/* QR Camera button */}
           <button
-            onClick={runSearch}
+            onClick={() => setShowQRScanner(true)}
+            className="px-5 py-3 rounded bg-teal-600 hover:bg-teal-500 text-white font-semibold transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
+            title="مسح QR Code"
+          >
+            <span className="text-xl">📷</span>
+            <span>مسح QR</span>
+          </button>
+          <button
+            onClick={() => runSearch()}
             disabled={!canSearch || isSearching}
             className="px-6 py-3 rounded bg-yellow-500 text-black font-semibold disabled:opacity-50"
           >
@@ -152,6 +291,14 @@ export default function GateScanClient({ eventId }: { eventId: string }) {
         )}
       </div>
 
+      {/* QR Scanner Modal */}
+      {showQRScanner && (
+        <QRScannerModal
+          onDetected={handleQRDetected}
+          onClose={() => setShowQRScanner(false)}
+        />
+      )}
+
       {selected && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto">
@@ -163,6 +310,26 @@ export default function GateScanClient({ eventId }: { eventId: string }) {
                 </div>
                 <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-white text-3xl">×</button>
               </div>
+
+              {/* Check-in status banner */}
+              {selected.check_in_status === 'checked_in' && (
+                <div className="bg-green-600/20 border border-green-500/40 rounded-xl p-4 mb-6 text-center">
+                  <p className="text-green-400 font-bold text-lg">✅ تم الدخول مسبقاً</p>
+                  {selected.checked_in_at && (
+                    <p className="text-green-300 text-sm mt-1">
+                      {new Date(selected.checked_in_at).toLocaleString('ar-BH')}
+                    </p>
+                  )}
+                </div>
+              )}
+              {selected.inspection_status === 'rejected' && (
+                <div className="bg-red-600/20 border border-red-500/40 rounded-xl p-4 mb-6 text-center">
+                  <p className="text-red-400 font-bold text-lg">❌ مرفوض عند البوابة</p>
+                  {selected.rejection_reason && (
+                    <p className="text-red-300 text-sm mt-1">{selected.rejection_reason}</p>
+                  )}
+                </div>
+              )}
 
               <div className="grid md:grid-cols-2 gap-6 mb-6">
                 <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">

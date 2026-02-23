@@ -21,7 +21,7 @@ export interface Event {
 export async function getAvailableEvents(): Promise<Event[]> {
   try {
     const result = await query(
-      `SELECT * FROM events WHERE is_active = true ORDER BY event_date ASC`
+      `SELECT * FROM events WHERE (is_active = true OR status IN ('active', 'upcoming', 'paused')) ORDER BY event_date ASC`
     );
 
     if (result.rows.length === 0) {
