@@ -260,8 +260,8 @@ Any car will be rejected if it is not ready in the inspection/registration area.
         year: 'Year',
         category: 'Category',
         carPhoto: 'Car Photos',
-        passengerInfo: 'Co-Driver / Mechanic Info',
-        hasPassenger: 'Co-Driver / Mechanic Info',
+        passengerInfo: 'Passenger data',
+        hasPassenger: 'Passenger data',
         pName: 'Name',
         pCpr: 'ID Number',
         pMobile: 'Mobile Number',
@@ -523,16 +523,9 @@ Any car will be rejected if it is not ready in the inspection/registration area.
 
         <header className="mb-8 text-center">
             {isDriftEvent && (
-              <>
-                <div className="mb-6 flex justify-center">
-                  <img src="/j2drift-logo.png" alt="J2drift" className="h-20 md:h-28 object-contain" onError={(e) => e.currentTarget.style.display='none'} />
-                </div>
-                <div className="mb-4">
-                  <span className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-700 text-black text-base md:text-lg font-bold px-6 py-2 rounded-full shadow-lg border-2 border-yellow-600">
-                    {currentLocale === 'ar' ? 'الجولة الثانية' : 'Round 2'}
-                  </span>
-                </div>
-              </>
+              <div className="mb-6 flex justify-center">
+                <img src="/j2drift-logo.png" alt="J2drift" className="h-20 md:h-28 object-contain" onError={(e) => e.currentTarget.style.display='none'} />
+              </div>
             )}
             {isPaused && (
               <div className="mt-4 bg-yellow-900/40 border border-yellow-600 text-yellow-200 p-4 rounded-xl max-w-2xl mx-auto shadow-lg backdrop-blur-sm">
