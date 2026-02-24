@@ -758,6 +758,16 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
                                                     حضور: {reg.check_in_status === 'checked_in' ? 'نعم' : 'لا'}
                                                 </span>
                                             )}
+                                            {/* Attendance Confirmation Badge */}
+                                            {reg.status === 'approved' && (
+                                                <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${
+                                                    reg.attendance_confirmed
+                                                        ? 'bg-emerald-900/30 text-emerald-400 border-emerald-700'
+                                                        : 'bg-orange-900/20 text-orange-400 border-orange-800'
+                                                }`}>
+                                                    {reg.attendance_confirmed ? '✅ أكد حضوره' : '⏳ لم يؤكد بعد'}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </td>
