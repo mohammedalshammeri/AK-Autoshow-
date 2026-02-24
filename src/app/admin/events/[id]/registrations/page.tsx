@@ -129,6 +129,7 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
   const [approvalSuccess, setApprovalSuccess] = useState<string | null>(null);
   const [filter, setFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [attendanceFilter, setAttendanceFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [accessError, setAccessError] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<{src: string, alt: string} | null>(null);
@@ -185,6 +186,13 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
       result = result.filter(r => (r.car_category || '').toLowerCase() === categoryFilter.toLowerCase());
     }
 
+    // Filter by attendance confirmation
+    if (attendanceFilter === 'confirmed') {
+      result = result.filter(r => r.status === 'approved' && r.attendance_confirmed === true);
+    } else if (attendanceFilter === 'not_confirmed') {
+      result = result.filter(r => r.status === 'approved' && !r.attendance_confirmed);
+    }
+
     // Search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -201,7 +209,7 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
     }
 
     setFilteredData(result);
-  }, [registrations, filter, categoryFilter, searchQuery]);
+  }, [registrations, filter, categoryFilter, attendanceFilter, searchQuery]);
 
   const handleApprove = async (regId: string) => {
     if (!window.confirm('هل أنت متأكد من قبول هذا المتسابق؟ سيتم إنشاء حساب له فوراً.')) return;
@@ -531,6 +539,17 @@ export default function EventRegistrationsPage({ params }: { params: Promise<{ i
                         <option value="headers">Headers</option>
                         <option value="turbo">Turbo</option>
                         <option value="4x4">4x4</option>
+                    </select>
+                </div>
+                <div className="relative min-w-[170px]">
+                    <select 
+                        className="w-full bg-[#0f1115] border border-emerald-800 text-white text-sm rounded-lg px-4 py-2.5 focus:border-emerald-500 outline-none appearance-none cursor-pointer"
+                        value={attendanceFilter}
+                        onChange={(e) => setAttendanceFilter(e.target.value)}
+                    >
+                        <option value="all">كل الحضور</option>
+                        <option value="confirmed">✅ أكد حضوره</option>
+                        <option value="not_confirmed">⏳ لم يؤكد بعد</option>
                     </select>
                 </div>
             </div>
